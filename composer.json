@@ -1,0 +1,19 @@
+{
+    "name": "kwin/yrphp",
+    "type": "project",
+    "description": "The YrPHP Framework Core Code.",
+    "keywords": ["kwin","kwinH","kwinWong","YrPHP","Framework"],
+    "homepage": "https://github.com/kwinH/YrPHP-Core",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "KwinWong",
+            "email": "KwinWong@hotmail.com",
+            "homepage": "https://github.com/kwinH",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.0"
+    }
+}
