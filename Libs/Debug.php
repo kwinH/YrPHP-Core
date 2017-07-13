@@ -133,9 +133,9 @@ class Debug
         );
     }
 
-
     /**
      * 输出调试消息
+     * @return string
      */
     public static function message()
     {
@@ -176,9 +176,12 @@ class Debug
     }
 
     /**
-     *返回同一脚本中两次获取时间的差值
+     * 返回同一脚本中两次获取时间的差值
+     * @param int $startTime
+     * @param int $stopTime
+     * @return string
      */
-    public static function spent($startTime = null, $stopTime = null)
+    public static function spent($startTime = 0, $stopTime = 0)
     {
         $startTime = empty($startTime) ? static::$startTime : $startTime;
         $stopTime = empty($stopTime) ? static::$stopTime : $stopTime;
@@ -188,10 +191,10 @@ class Debug
 
     /**
      * 记录日志 保存到项目runtime下
-     * @param $fileName 文件名
-     * @param $content  内容
+     * @param string $content
+     * @param string $fileName
      */
-    public static function log($content, $fileName = null)
+    public static function log($content = '', $fileName = '')
     {
         $fileName = is_null($fileName) ? 'log-' . date('Y-m-d') : $fileName;
         $fileName = C('logDir') . $fileName . '.log';

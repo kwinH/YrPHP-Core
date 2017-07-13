@@ -16,9 +16,9 @@ use YrPHP\Structure;
 
 class App
 {
-    static $instanceList = array();
+    public static $instanceList = array();
 
-    static function init()
+    public static function init()
     {
         define('STARTTIME', microtime(true));
         //   ini_set('memory_limit', -1);
@@ -47,9 +47,9 @@ class App
   //设置include包含文件所在的所有目录
   set_include_path($include_path);
   */
-    static function autoLoadClass($className)
+    public static function autoLoadClass($className)
     {
-        $file = BASE_PATH.'_class_alias.php';
+        $file = BASE_PATH . '_class_alias.php';
         requireCache($file);
 
         if (!class_exists($className) && $name = Arr::arrayIGet(Config::get('classAlias'), $className)) {
@@ -58,7 +58,7 @@ class App
         }
     }
 
-    static function loadConf()
+    public static function loadConf()
     {
         //包含系统配置文件
         Config::load('Config');
@@ -121,10 +121,10 @@ class App
      * @param $errLine
      * @return bool
      */
-    static function yrError($errNo, $errStr, $errFile, $errLine)
+    public static function yrError($errNo, $errStr, $errFile, $errLine)
     {
-        $logFile = '%s_log_' . date("Y-m-d");//定义日志文件名;
         $template = '';
+        $logFile = '%s_log_' . date("Y-m-d");//定义日志文件名;
 
         switch ($errNo) {
             case E_USER_ERROR:
@@ -159,7 +159,7 @@ class App
     }
 
 
-    static function run()
+    public static function run()
     {
         static::init();
         Config::load('class_alias', 'classAlias');
@@ -167,7 +167,7 @@ class App
         static::loadConf();
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
-        $url = uri::rsegment();
+        $url = Uri::rsegment();
 
         $ctrBasePath = APP_PATH . Config::get('ctrBaseNamespace') . '/';
 
@@ -179,6 +179,8 @@ class App
 
         $classObj = APP . '\\' . Config::get('ctrBaseNamespace');
 
+        $action = '';
+        $module = '';
         if (Config::get('urlType') == 0) {
             //普通模式 GET
             if (empty($_GET[Config::get('ctlTrigger')])) {
@@ -195,7 +197,6 @@ class App
 
         } else {
             //(PATHINFO 模式)
-            $module = '';
             foreach ($url as $k => $v) {
                 $v = ucfirst(strtolower($v));
                 if (is_dir($ctrBasePath . $v)) {
@@ -267,7 +268,7 @@ class App
             error404();
         }
 
-        if (DEBUG && !request::isAjax()) {
+        if (DEBUG && !Request::isAjax()) {
             echo Debug::message();
         }
     }
@@ -275,30 +276,30 @@ class App
     /**
      * @param array $argv
      */
-    static function cli($argv)
+    public static function cli($argv)
     {
-            if (count($argv) < 3) {
-                exit('Parameter error');
-            }
+        if (count($argv) < 3) {
+            exit('Parameter error');
+        }
 
-            static::init();
-            Config::load('class_alias', 'classAlias');
-            Config::load('interface', 'interface');
-            Config::load('commands', 'commands');
-            static::loadConf();
+        static::init();
+        Config::load('class_alias', 'classAlias');
+        Config::load('interface', 'interface');
+        Config::load('commands', 'commands');
+        static::loadConf();
 
-            $class = Config::get('commands.' . $argv[1]);
-            if (is_null($class)) {
-                $class = APP . '\\' . Config::get('ctrBaseNamespace') . '\\' . ucfirst(strtolower($argv[1]));
-            }
+        $class = Config::get('commands.' . $argv[1]);
+        if (is_null($class)) {
+            $class = APP . '\\' . Config::get('ctrBaseNamespace') . '\\' . ucfirst(strtolower($argv[1]));
+        }
 
-            $method = $argv[2];
+        $method = $argv[2];
 
-            if (class_exists($class)) {
-                unset($argv[0], $argv[1], $argv[2]);
-                $class = static::loadClass($class);
-                call_user_func_array([$class, $method], $argv);
-            }
+        if (class_exists($class)) {
+            unset($argv[0], $argv[1], $argv[2]);
+            $class = static::loadClass($class);
+            call_user_func_array([$class, $method], $argv);
+        }
     }
 
     /**
@@ -307,7 +308,7 @@ class App
      * @param $parameter $args 0个或者更多的参数，做为类实例化的参数。
      * @return  object
      */
-    static function loadClass()
+    public static function loadClass()
     {
         //取得所有参数
         $arguments = func_get_args();
@@ -344,7 +345,7 @@ class App
      * @param array $params
      * @return array
      */
-    static function getDependencies(ReflectionMethod $rfMethod, $params = [])
+    public static function getDependencies(ReflectionMethod $rfMethod, $params = [])
     {
         $instanceParams = [];
 
@@ -393,10 +394,3 @@ class App
         }
     }
 }
-
-if (substr(PHP_SAPI, 0, 3) == 'cli') {
-    App::cli($argv);
-} else {
-    App::run();
-}
-
