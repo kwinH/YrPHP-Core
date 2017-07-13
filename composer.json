@@ -15,6 +15,6 @@
     ],
     "require": {
         "php": ">=5.5.0",
-        "kwin/yrphp-installer": "*"
+        "kwin/yrphp-installer": "dev-master"
     }
 }
