@@ -395,7 +395,12 @@ class App
     {
         $classAlias = Config::get('classAlias');
         if (isset($classAlias[$name]) || $name = Arr::arrayIGet($classAlias, $name)) {
-            return loadClass($classAlias[$name], $paramenters);
+            if ($paramenters) {
+                return loadClass($classAlias[$name], $paramenters);
+            } else {
+                return loadClass($classAlias[$name]);
+            }
         }
+        return null;
     }
 }
