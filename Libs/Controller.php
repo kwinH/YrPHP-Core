@@ -17,7 +17,6 @@ abstract class Controller
     protected static $instance;
 
     /**
-     *
      * 在控制器上注册的中间件
      * @var array
      */
@@ -25,7 +24,7 @@ abstract class Controller
 
     public function __construct()
     {
-        static::$instance =& $this;
+        self::$instance =& $this;
 
     }
 
@@ -36,11 +35,11 @@ abstract class Controller
      * 可通过引用的方式使用Controller对象
      * 返回当前实例控制器对象
      * @static
-     * @return    object
+     * @return    \YrPHP\Controller
      */
     public static function &getInstance()
     {
-        return static::$instance;
+        return self::$instance;
     }
 
 

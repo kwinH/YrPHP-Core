@@ -61,7 +61,7 @@ class App
     public static function loadConf()
     {
         //包含系统配置文件
-        Config::load('Config');
+        Config::load('config');
         //包含自定义配置文件
         if (defined('APP_MODE')) {
             Config::load('config_' . APP_MODE);
@@ -72,8 +72,8 @@ class App
         error_reporting(-1); //报告所有PHP错误
         if (Config::get('logRecord')) {
             ini_set('log_errors', 1); //设置是否将脚本运行的错误信息记录到服务器错误日志或者error_log之中
-            $logFile = rtrim(Config::get('logDir'), '/') . '/sys_log_' . date("Y-m-d") . '.log';//定义日志文件名;
-            ini_set('error_log', $logFile); //将错误信息写进日志 APP.'runtime/logs'/sys_log_' . date("Y-m-d") . '.log'
+            $logFile = rtrim(Config::get('logDir'), '/') . '/all_log_' . date("Y-m-d") . '.log';//定义日志文件名;
+            ini_set('error_log', $logFile); //将错误信息写进日志 APP.'runtime/logs'/all_log_' . date("Y-m-d") . '.log'
             //开启自定义错误日志
             set_error_handler(array('App', "yrError"));
         }
@@ -161,9 +161,8 @@ class App
 
     public static function run()
     {
+        $i=0;
         static::init();
-        Config::load('class_alias', 'classAlias');
-        Config::load('interface', 'interface');
         static::loadConf();
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
@@ -283,9 +282,6 @@ class App
         }
 
         static::init();
-        Config::load('class_alias', 'classAlias');
-        Config::load('interface', 'interface');
-        Config::load('commands', 'commands');
         static::loadConf();
 
         $class = Config::get('commands.' . $argv[1]);

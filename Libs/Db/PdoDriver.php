@@ -12,6 +12,7 @@ namespace YrPHP\Db;
 use PDO;
 use PDOException;
 use PDOStatement;
+use YrPHP\Config;
 use YrPHP\Debug;
 use YrPHP\Exception;
 
@@ -109,7 +110,12 @@ class PdoDriver extends PDO implements IDBDriver
 
         } finally {
             Debug::stop();
-            Debug::addMsg(array('sql' => trim($sql) . ($parameters ? json_encode($parameters) : ''), 'time' => Debug::spent(), 'error' => $errorMsg), 2);
+            $sql = trim($sql) . ($parameters ? json_encode($parameters) : '');
+            $time = Debug::spent();
+            if (Config::get('sqlLog')) {
+                Debug::log('[' . date('Y-m-d H:i:s') . ']' . $sql . ' [' . $time . ' 秒]' . (empty($errorMsg) ? "" : 'Error:' . $errorMsg), 'sql_log_' . date('Y-m-d'));
+            }
+            Debug::addMsg(array('sql' => $sql, 'time' => $time, 'error' => $errorMsg), 2);
         }
 
         return $this;

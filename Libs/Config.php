@@ -77,10 +77,11 @@ class Config
         }
 
         $config = static::$config;
-        foreach (explode('.', $key) as $v) {
-            if (!isset($config[$v])) {
+        foreach (explode('.', $key) as $k => $v) {
+            if (!isset($config[$v]) && ($k != 0 || ($config = static::load($v, $v)) == false)) {
                 return $default;
             }
+
             $config = $config[$v];
         }
         return $config;

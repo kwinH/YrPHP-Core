@@ -20,7 +20,7 @@ return [
 
 
     /* -----------错误处理----------------------------------*/
-    'logRecord' => true,   // 默认错误记录日志
+    'logRecord' => true,   // bool 默认错误记录日志
     'logDir' => APP_PATH . 'Runtime/Logs/', // 日志记录目录
 
 
@@ -48,12 +48,13 @@ return [
     /*--------------------以下是数据库配置---------------------------------------*/
     'openCache' => false, //是否开启数据库数据缓存
     'defaultFilter' => 'htmlspecialchars', // 默认参数过滤方法 用于I函数过滤 多个用|分割 如：stripslashes|htmlspecialchars
+    'sqlLog' => true,//bool 是否记录sql日志
 
     /*--------------------以下是数据缓存配置---------------------------------------*/
     'cacheCompress' => false,  // 数据缓存是否压缩缓存
     'dbCacheTime' => 0, //数据缓存时间0表示永久
     'dbCacheType' => 'file', //数据缓存类型 file|memcache|memcached|redis
-    //单个item大于1M的数据存memcache和读取速度比file
+    //单个item大于1M的数据存memcache和读取速度比file慢
     'dbCachePath' => APP_PATH . 'Runtime/Data/',//数据缓存文件地址(仅对file有效)
     'dbCacheExt' => 'php',//生成的缓存文件后缀(仅对file有效)
 

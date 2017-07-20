@@ -13,7 +13,7 @@
  * 访问控制器的原始资源
  * 返回当前实例控制器对象
  * $app =& getInstance();
- * @return Controller 资源
+ * @return \YrPHP\Controller
  */
 function &getInstance()
 {
@@ -283,10 +283,11 @@ function requireCache($filename)
  * @param string $url 跳转URL
  * @param int $time 指定时间跳转
  */
-function error404()
+function error404($msg = '', $url = '', $time = 3)
 {
     sendHttpStatus(404);
-
+    $msg = empty($msg) ? '你访问的页面不存在或被删除！' : $msg;
+    $url = empty($url) ? getUrl() : $url;
     require BASE_PATH . 'resource/tpl/404.php';
     die;
 }
