@@ -49,7 +49,10 @@ class App
   */
     public static function autoLoadClass($className)
     {
-        $file = BASE_PATH . '_class_alias.php';
+        $file = ROOT_PATH . '_class_alias.php';
+        if (!file_exists($file)) {
+            file_put_contents($file, '<?php' . PHP_EOL . 'use YrPHP\Facade;');
+        }
         requireCache($file);
 
         if (!class_exists($className) && $name = Arr::arrayIGet(Config::get('classAlias'), $className)) {
@@ -286,7 +289,7 @@ class App
 
         $class = Config::get('commands.' . $argv[1]);
         if (is_null($class)) {
-            $class = APP . '\\' . Config::get('ctrBaseNamespace') . '\\' . ucfirst(strtolower($argv[1]));
+            $class = APP . '\\' . Config::get('ctrBaseNamespace') . '\\' . ucfirst(strtolower(str_replace('/', '\\', $argv[1])));
         }
 
         $method = $argv[2];
@@ -295,6 +298,8 @@ class App
             unset($argv[0], $argv[1], $argv[2]);
             $class = static::loadClass($class);
             call_user_func_array([$class, $method], $argv);
+        } else {
+            die($class . ' class no found');
         }
     }
 
@@ -386,7 +391,12 @@ class App
     {
         $classAlias = Config::get('classAlias');
         if (isset($classAlias[$name]) || $name = Arr::arrayIGet($classAlias, $name)) {
-            return loadClass($classAlias[$name], $paramenters);
+            if ($paramenters) {
+                return loadClass($classAlias[$name], $paramenters);
+            } else {
+                return loadClass($classAlias[$name]);
+            }
         }
+        return null;
     }
 }

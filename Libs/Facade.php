@@ -10,6 +10,22 @@ abstract class Facade
 
     public static function __callStatic($method, $args)
     {
+        return static::runMethod($method, $args);
+    }
+
+    public function __call($name, $arguments)
+    {
+        return static::runMethod($name, $arguments);
+    }
+
+    public function __get($name)
+    {
+        $instance = App::loadClass(static::$className);
+        return isset($instance->$name) ? $instance->$name : false;
+    }
+
+    protected static function runMethod($method, $args)
+    {
         $reflectionMethod = new ReflectionMethod(static::$className, $method);
         if ($reflectionMethod->isStatic()) {
             $className = static::$className;

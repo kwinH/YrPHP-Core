@@ -1281,7 +1281,7 @@ $db->find(1);
 >生产最后的SQL一句
 >
 >string $tableName 表名
->$auto 是否自动添加表前缀**
+>$auto 是否自动添加表前缀
 
 ------------
 ```php
@@ -1334,11 +1334,12 @@ $this->limit(1)->all();
 ```
 
 **WHERE**
->**where($where = '', $logical = "and")
+>where($where = '', $logical = "and")
+>
 > @param $logical 与前一个条件的连接符
 > @param $where string|array
 >string "id>'100'"   `->`     where id>'100'**
->**
+>
 >array($field=>$value)
 >
 >例：
@@ -1348,7 +1349,7 @@ $this->limit(1)->all();
 >field可以用空格分开，与连接符、字段名、运算符组成
 >运算符 =|!=|<>|>|<|like|is|between|not between|in|not in
 >连接符 or|and 与前一个条件的连接符 默认调用`$logical`
->**
+>
 
 ```php
 
