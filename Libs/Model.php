@@ -222,7 +222,7 @@ class Model
             }
 
         } elseif (is_string($value)) {
-            return '"' . trim($value) . '"';
+            return '"' . trim(addslashes($value)) . '"';
         } elseif (is_numeric($value)) {
             return $value;
         }
@@ -321,6 +321,8 @@ class Model
      */
     protected function condition($where = '', $logical = "and", $type = "where")
     {
+        if (empty($where)) return $this;
+
         if (empty($this->methods[$type])) {
             $this->methods[$type] = " $type ";
         } else {
@@ -1017,20 +1019,15 @@ class Model
             $this->PreProcessStatus = true;
         }
 
+        //$prepare = trim(str_repeat('?,', count($fields)), ',');
 
-        $field = $this->escapeId($fields);
-
-        //$value = trim(str_repeat('?,', count($fields)), ',');
-
-        $value = trim(array_reduce($fields, function ($res, $item) {
+        $prepare = trim(array_reduce($fields, function ($res, $item) {
             return $res . ',:' . $item;
         }), ',');
 
-        $this->statement = "{$act}  INTO " . $this->getTempTableName() . "(" . $field . ")  VALUES(" . $value . ") ";
-
-
+        $fields = $this->escapeId($fields);
+        $this->statement = "{$act}  INTO " . $this->getTempTableName() . "(" . $fields . ")  VALUES(" . $prepare . ") ";
         $re = $this->query($this->statement, $data);
-
         return $re->getLastId();
     }
 
@@ -1068,10 +1065,6 @@ class Model
                     unset($array[$key]);
                 }
             }
-        }
-
-        if (!get_magic_quotes_gpc()) {
-            $array = array_map('addslashes', $array);//回调过滤数据($data);
         }
 
         return $array;
@@ -1187,8 +1180,9 @@ class Model
         $where = $this->methods['where'];
         $limit = $this->methods['limit'];
 
+        $fields = array_keys($data);
+
         if ($this->PreProcessStatus) {
-            $fields = array_keys($data);
             $values = array_values($data);
             $values = $this->setDataPreProcessFill($fields, $values);
             $data = $values === false ? $data : $values;
@@ -1196,11 +1190,15 @@ class Model
             $this->PreProcessStatus = true;
         }
 
-        $data = $this->escape($data);
 
-        $this->statement = "UPDATE " . $this->getTempTableName() . " SET " . $data . " " . $where . " " . $limit;
+        $prepare = trim(array_reduce($fields, function ($res, $item) {
+            return $res . ',' . $item . '=' . ':' . $item;
+        }), ',');
 
-        return $this->query($this->statement)->result();
+        $this->statement = "UPDATE " . $this->getTempTableName() . " SET " . $prepare . " " . $where . " " . $limit;
+
+        return $this->query($this->statement, $data)->result();
+
     }
 
 
