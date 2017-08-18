@@ -1082,9 +1082,10 @@ class Model
         if (isset(static::$tableFields[$this->tempTableName])) {
             return static::$tableFields[$this->tempTableName];
         }
-
-        $sql = 'desc ' . $this->getTempTableName();
+        $table = $this->getTempTableName();
+        $sql = 'desc ' . $table;
         $result = $this->query($sql)->result();
+        $this->tempTableName = $table;
 
         foreach ($result as $row) {
 
