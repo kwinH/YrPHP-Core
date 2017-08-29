@@ -189,7 +189,7 @@ class Validate
 
         $max = max($range);
         $min = min($range);
-        $strLen = strlen($value);
+        $strLen = mb_strlen($value);
         if ($max == $min) {
             if ($strLen == $max) {
                 return true;
