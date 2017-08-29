@@ -355,7 +355,7 @@ class Model
 
                 if ($v instanceof \Closure) {
                     $this->methods[$type] .= $filed . ' ' . $operator . ' (' . call_user_func($v, new Model($this->tableName)) . ')';
-                } elseif (is_null($v) || strripos($v, 'null') !== false) {
+                } elseif (is_null($v) || (is_string($v) && strripos($v, 'null') !== false)) {
                     $this->methods[$type] .= $filed . ' is null';
                 } else {
                     $operator = strtoupper($operator);
@@ -363,20 +363,19 @@ class Model
                         $v = explode(',', $v);
                     }
 
-                    if (strpos($operator, 'IN') !== false) {
-                        $val = $this->escape($v);
-                    } elseif (strpos($operator, 'BETWEEN') !== false) {
+                    if (strpos($operator, 'BETWEEN') !== false) {
                         $val = $this->escape($v[0]) . ' and  ' . $this->escape($v[1]);
                     } elseif (strpos($type, 'on') !== false) {
                         $val = $this->escapeId($v);
                     } else {
+                        //else if (strpos($operator, 'IN') !== false) {$val = $this->escape($v);}
                         $val = $this->escape($v);
                     }
 
                     $this->methods[$type] .= $filed . ' ' . $operator . ' ' . $val;
                 }
-                $count++;
 
+                $count++;
             }
         }
         $this->methods[$type] .= ')';
@@ -1006,7 +1005,7 @@ class Model
      */
     function inserts($data = [], $act = 'INSERT')
     {
-        if (is_array($data[0])) {
+        if (isset($data[0]) && is_array($data[0])) {
             $fields = array_keys($data[0]);
         } else {
             $fields = array_keys($data);

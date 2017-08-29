@@ -295,10 +295,11 @@ function error404($msg = '', $url = '', $time = 3)
 /**
  * 下载一个远程文件到客户端
  * 例  clientDown('http://img.bizhi.sogou.com/images/2012/02/13/66899.jpg');
- * @param $url 一个远程文件
+ * @param string $url
+ * @param null|string $savePath
  * @return bool
  */
-function clientDown($url, $savePath = null)
+function clientDown($url = '', $savePath = null)
 {
     if (empty($url)) {
         return false;

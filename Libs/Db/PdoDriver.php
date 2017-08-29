@@ -90,7 +90,7 @@ class PdoDriver extends PDO implements IDBDriver
             if (empty($parameters)) {
                 $this->result = $this->PDOStatement->execute();
             } else {
-                if (is_array($parameters[0])) {
+                if (isset($parameters[0]) && is_array($parameters[0])) {
 
                     foreach ($parameters as $v) {
                         $this->result = $this->PDOStatement->execute($v);
