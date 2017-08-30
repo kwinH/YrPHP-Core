@@ -207,7 +207,7 @@ class Validate
      */
     public static function email($value)
     {
-        return filter_var($value, FILTER_VALIDATE_EMAIL);
+        return (bool)filter_var($value, FILTER_VALIDATE_EMAIL);
     }
 
     /**
@@ -230,7 +230,7 @@ class Validate
      */
     public static function number($value)
     {
-        return is_numeric($value);
+        return (bool)is_numeric($value);
     }
 
 
@@ -241,7 +241,7 @@ class Validate
      */
     public static function regex($value, $rules)
     {
-        return preg_match($rules, $value);
+        return (bool)preg_match($rules, $value);
     }
 
 
@@ -251,7 +251,7 @@ class Validate
      */
     public static function phone($value = '')
     {
-        return preg_match('/^1\d{10}$/', $value);
+        return (bool)preg_match('/^1\d{10}$/', $value);
     }
 
 
