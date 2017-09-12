@@ -8,6 +8,7 @@
 
 namespace YrPHP;
 
+
 class Request
 {
     protected $exceptKey = [];
@@ -142,7 +143,6 @@ class Request
 
     public function pop(array $keys, $method = 'get')
     {
-
         $keys = array_flip($keys);
 
         switch ($method) {
@@ -181,34 +181,11 @@ class Request
         return $data;
     }
 
-    /**返回没有经过路由替换过的uri数组
-     * @param null $n
-     * @param null $no_result
-     * @return array|mixed|null|string
-     */
-    function part($n = null, $no_result = null)
-    {
-        return \uri::segment($n, $no_result);
-    }
 
-    /**
-     * 返回路由替换过后的uri 数组
-     * @param null $n
-     * @param null $no_result
-     * @return array|mixed|null|string
-     */
-    function rpart($n = null, $no_result = null)
-    {
-        return \uri::rsegment($n, $no_result);
-    }
 
-    /**
-     *返回没有经过路由替换过的uri字符串
-     * @return string
-     */
     public function getPath()
     {
-        return \uri::getPath();
+        return \Route::getCurrentUri();
     }
 
     public function is($rule)
@@ -222,14 +199,7 @@ class Request
 
     }
 
-    /**
-     * 返回经过路由替换过的uri字符串
-     * @return string
-     */
-    public function getRPath()
-    {
-        return \uri::parseRoutes();
-    }
+
 
     /**
      * 在问号 ? 之后的所有字符串
@@ -237,7 +207,7 @@ class Request
      */
     public function getQuery()
     {
-        return \uri::getQuery();
+        return $_SERVER['QUERY_STRING'];
     }
 
     /**

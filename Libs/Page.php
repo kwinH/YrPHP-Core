@@ -81,7 +81,7 @@ class Page
             unset($this->urlParam[$this->p]);
         }
 
-        $this->url = empty($this->url) ? getUrl(\uri::getPath()) : $this->url;
+        $this->url = empty($this->url) ? getUrl(\Route::getCurrentUri()) : $this->url;
         $this->url .= '?' . (empty($this->urlParam) ? '' : http_build_query($this->urlParam) . '&');
 
         return $this;

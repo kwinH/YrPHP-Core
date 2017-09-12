@@ -25,8 +25,8 @@ return [
     'response' => 'YrPHP\\Response',
     'session' => 'YrPHP\\Session',
     'upload' => 'YrPHP\\Upload',
-    'uri' => 'YrPHP\\Uri',
     'validate' => 'YrPHP\\Validate',
     'verifyCode' => 'YrPHP\\VerifyCode',
     'view' => 'YrPHP\\View',
+    'route' => 'YrPHP\\Route',
 ];

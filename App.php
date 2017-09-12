@@ -36,17 +36,16 @@ class App
         if (!file_exists(APP)) {
             Structure::run();
         }
-
     }
 
-
-    /*
-  /设置包含目录（类所在的全部目录）,  PATH_SEPARATOR 分隔符号 Linux(:) Windows(;)
-  $include_path=get_include_path();                         //原基目录
-  $include_path.=PATH_SEPARATOR.ROOT_PATH;       //框架中基类所在的目录
-  //设置include包含文件所在的所有目录
-  set_include_path($include_path);
-  */
+    /**
+     * 设置包含目录（类所在的全部目录）,  PATH_SEPARATOR 分隔符号 Linux(:) Windows(;)
+     * $include_path=get_include_path();                         //原基目录
+     * $include_path.=PATH_SEPARATOR.ROOT_PATH;       //框架中基类所在的目录
+     * set_include_path($include_path);//设置include包含文件所在的所有目录
+     *
+     * @param $className
+     */
     public static function autoLoadClass($className)
     {
         $file = ROOT_PATH . '_class_alias.php';
@@ -72,10 +71,10 @@ class App
 
         date_default_timezone_set(Config::get('timezone')); //设置时区（默认中国）
 
-        error_reporting(-1); //报告所有PHP错误
+        error_reporting(E_ALL); //报告所有PHP错误
         if (Config::get('logRecord')) {
             ini_set('log_errors', 1); //设置是否将脚本运行的错误信息记录到服务器错误日志或者error_log之中
-            $logFile = rtrim(Config::get('logDir'), '/') . '/all_log_' . date("Y-m-d") . '.log';//定义日志文件名;
+            $logFile = rtrim(Config::get('logDir'), '/') . '/fatal_log_' . date("Y-m-d") . '.log';//定义日志文件名;
             ini_set('error_log', $logFile); //将错误信息写进日志 APP.'runtime/logs'/all_log_' . date("Y-m-d") . '.log'
             //开启自定义错误日志
             set_error_handler(array('App', "yrError"));
@@ -93,21 +92,21 @@ class App
         }
 
         if (isset($_GET['Lang'])) {
-            Session::set('Lang', 'en');
-        } else {
-            if (!Session::get('Lang')) {
-                Session::set('Lang', 'en');
-            }
+            $lang = $_GET['Lang'];
+        } elseif (!$lang = Session::get('Lang')) {
+            $lang = 'en';
         }
+
+        Session::set('Lang', $lang);
+        Config::set('Lang', $lang);
 
         if (isset($_GET['country'])) {
             Session::set('country', strtoupper($_GET['country']));
-        } else {
-            if (!Session::get('country')) {
-                Session::set('country', reset(explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"])));
-            }
+        } else if (!Session::get('country')) {
+            Session::set('country', reset(explode(',', $_SERVER["HTTP_ACCEPT_LANGUAGE"])));
         }
-        $langPath = APP_PATH . 'Lang/lang_' . Session::get('Lang') . '.php';
+
+        $langPath = APP_PATH . 'Lang/lang_' . $lang . '.php';
 
         if (file_exists($langPath)) {
             getLang(require $langPath);
@@ -164,111 +163,23 @@ class App
 
     public static function run()
     {
-        $i=0;
         static::init();
         static::loadConf();
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
-        $url = Uri::rsegment();
-
-        $ctrBasePath = APP_PATH . Config::get('ctrBaseNamespace') . '/';
-
-        //默认控制器文件
-        $defaultCtl = Config::get('defaultCtl');
-
-        //默认方法
-        $defaultAct = Config::get('defaultAct');
-
-        $classObj = APP . '\\' . Config::get('ctrBaseNamespace');
-
-        $action = '';
-        $module = '';
-        if (Config::get('urlType') == 0) {
-            //普通模式 GET
-            if (empty($_GET[Config::get('ctlTrigger')])) {
-                $className = $defaultCtl;
-            } else {
-                $url = explode('/', $_GET[Config::get('ctlTrigger')]);
-                $className = ucfirst(end($url));
-                array_pop($url);
-                $classObj .= '\\' . implode('\\', $url);
-
-            }
-
-            $action = empty($_GET[Config::get('actTrigger')]) ? $defaultAct : strtolower($_GET[Config::get('actTrigger')]);
-
+        if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
+            Route::setRoutes(include APP_PATH . 'Runtime/cache/routes.php');
         } else {
-            //(PATHINFO 模式)
-            foreach ($url as $k => $v) {
-                $v = ucfirst(strtolower($v));
-                if (is_dir($ctrBasePath . $v)) {
-                    $module .= $v . '/';
-                    $ctrBasePath .= empty($v) ? '' : $v . '/';
-                    $classObj .= '\\' . $v;
-                    unset($url[$k]);
-                } else {
-                    $className = ucfirst(strtolower($v));
-                    $action = empty($url[$k + 1]) ? $defaultAct : strtolower($url[$k + 1]);
-                    unset($url[$k], $url[$k + 1]);
-                    break;
-                }
-            }
-
-            if (!isset($className)) {
-                $className = $defaultCtl;
-                $action = $defaultAct;
-            }
-
+            require APP_PATH . 'Config/routes.php';
         }
 
-        $url = array_values($url);
 
-        $classObj .= '\\' . $className;
-        $classPath = $ctrBasePath . $className . '.php';
-        $nowAction = $classObj . '::' . $action;
-
-        Config::set([
-            'classPath' => $classPath,
-            'module' => trim($module, '/'),
-            'ctlName' => $className,
-            'classObj' => $classObj,
-            'actName' => $action,
-            'nowAction' => $nowAction,
-            'param' => $url,
-            'Lang' => Session::get('Lang')
-        ]);
-
-        if (method_exists($classObj, $action)) {
-
-            static::pipeline()
-                ->send(static::request())
-                ->through(Config::get('middleware.before'))
-                ->then(function ($request) use ($classObj, $action, $url) {
-                    $ctlObj = static::loadClass($classObj);
-                    $middleware = array_merge(Config::get('middleware.middle'), $ctlObj->getMiddleware());
-
-                    static::pipeline()
-                        ->send($request)
-                        ->through($middleware)
-                        ->then(function ($request) use ($classObj, $action, $url) {
-                            array_unshift($url, $classObj, $action);
-                            $request->view = call_user_func_array('static::runMethod', $url);
-
-                            static::pipeline()
-                                ->send($request)
-                                ->through(Config::get('middleware.after'))
-                                ->then(function ($request) {
-                                    echo $request->view;
-                                    Session::delete(Session::get('flash', []));
-                                    Session::set('flash', []);
-                                });
-
-                        });
-                });
-
-        } else {
+        try {
+            Route::dispatch();
+        } catch (Exception $e) {
             error404();
         }
+
 
         if (DEBUG && !Request::isAjax()) {
             echo Debug::message();
@@ -305,7 +216,7 @@ class App
 
     /**
      * loadClass($className [, mixed $parameter [, mixed $... ]])
-     * @param $className 需要得到单例对象的类名
+     * @param string $className 需要得到单例对象的类名
      * @param $parameter $args 0个或者更多的参数，做为类实例化的参数。
      * @return  object
      */
@@ -336,6 +247,7 @@ class App
             }
 
         }
+
         return static::$instanceList[$key];
     }
 

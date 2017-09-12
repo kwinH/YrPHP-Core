@@ -9,5 +9,6 @@
 
 //'class_alias_name' => 'class_ original_name',
 return [
-'ide-help'=>'YrPHP\\Console\\GeneratorCommand'
+    'ide-help' => 'YrPHP\\Console\\GeneratorCommand',
+    'route' => 'YrPHP\\Console\\UrlGenerator',
 ];

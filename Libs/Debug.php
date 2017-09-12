@@ -146,9 +146,7 @@ class Debug
 
 
         static::$info[] = '内存使用：<strong style="color:red">' . round(memory_get_usage() / 1024, 2) . ' KB</strong>';
-        static::$info[] = 'URI字符串：' . implode('/', \uri::segment());
-        static::$info[] = 'URI路由地址：' . implode('/', \uri::rsegment());
-        static::$info[] = '控制器地址：' . C('classPath');
+        static::$info[] = '控制器地址：' . C('ctlPath');
         static::$info[] = '调用方法：' . C('nowAction');
         if (count(static::$info) > 0) {
             $mess .= '<br>［系统信息］';
@@ -194,7 +192,7 @@ class Debug
      * @param string $content
      * @param string $fileName
      */
-    public static function log($content = '', $fileName = '')
+    public static function log($content = '', $fileName = null)
     {
         $fileName = is_null($fileName) ? 'log-' . date('Y-m-d') : $fileName;
         $fileName = C('logDir') . $fileName . '.log';

@@ -41,23 +41,16 @@ function C($name = null, $default = null)
  */
 function getUrl($url = '', $indexPage = true)
 {
-    if (isset($_SERVER['HTTP_HOST']) && preg_match('/^((\[[0-9a-f:]+\])|(\d{1,3}(\.\d{1,3}){3})|[a-z0-9\-\.]+)(:\d+)?$/i', $_SERVER['HTTP_HOST'])) {
-        $base_url = (\request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']
-            . substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME'])));
-    } else {
-        $base_url = 'http://localhost/';
-    }
+    $baseDir = substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME'])));
+    $base_url = (\request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $baseDir;
 
-    $base_url = trim($base_url, '/');
-
-    if (C('urlType') != 2 && $indexPage) {
-        $base_url .= $_SERVER['SCRIPT_NAME'];
+    if (!isset($_SERVER['REDIRECT_URL']) && $indexPage) {
+        $base_url .= substr($_SERVER['SCRIPT_NAME'], strlen($baseDir));
     }
 
     if (!empty($url)) {
         $base_url .= '/' . ltrim($url, '/');
     }
-
     return $base_url;
 }
 

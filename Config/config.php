@@ -7,12 +7,12 @@
  * GitHub:https://github.com/kwinH/YrPHP
  */
 return [
-    'urlType' => 2, // URL访问模式,可选参数0、1、2、3,代表以下四种模式：
-    // 0 (普通模式); 1 (PATHINFO 模式); 2(REWRITE重写模式) 默认为PATHINFO 模式
-    'ctlTrigger' => 'c',
-    'actTrigger' => 'm',
+    'uriAutoAddressing' => false,//uri地址自动定位到控制器
     'defaultCtl' => 'Index', // 默认控制器名称
     'defaultAct' => 'index', // 默认操作名称
+
+    'ctrBaseNamespace' => 'Controllers',//默认的控制器层名称
+    'modelBaseNamespace' => "Models",//默认的模型层名称
     'contentType' => 'text/html', //指定客户端能够接收的内容类型
     'charset' => 'UTF-8', //采用编码格式
     'timezone' => 'PRC', //时区
@@ -24,10 +24,6 @@ return [
     'logDir' => APP_PATH . 'Runtime/Logs/', // 日志记录目录
 
 
-    'ctrBaseNamespace' => 'Controllers',//默认的控制器层名称
-    'modelBaseNamespace' => "Models",//默认的模型层名称
-
-
     /*--------------------以下是模版配置---------------------------------------*/
     'setTemplateDir' => APP_PATH . "views/", //设置模板目录位置
     /**
@@ -36,7 +32,7 @@ return [
      * 如果设置了后缀如：display('index.php');
      * 将不理会配置中的该参数，找到模板目录下的index.php文件
      */
-    'templateExt' => 'html',
+    'templateExt' => 'php',
     'setCompileDir' => APP_PATH . "Runtime/CompileTpl/", //设置模板被编译成PHP文件后的文件位置
     'caching' => 0, //缓存(静态化)开关 1开启，0为关闭
     'setCacheDir' => APP_PATH . "Runtime/Cache/", //设置缓存的目录
@@ -54,7 +50,7 @@ return [
     'cacheCompress' => false,  // 数据缓存是否压缩缓存
     'dbCacheTime' => 0, //数据缓存时间0表示永久
     'dbCacheType' => 'file', //数据缓存类型 file|memcache|memcached|redis
-    //单个item大于1M的数据存memcache和读取速度比file慢
+    //单个item大于1M的数据存memcache和读取速度比file
     'dbCachePath' => APP_PATH . 'Runtime/Data/',//数据缓存文件地址(仅对file有效)
     'dbCacheExt' => 'php',//生成的缓存文件后缀(仅对file有效)
 
@@ -71,6 +67,7 @@ return [
         'domain' => '',//设置域，默认为当前域名
     ],
     /*--------------------以下是cookie配置---------------------------------------*/
+    'cookiePrefix' => 'yrPHP_',
     'cookieExpire' => 7200,//有效期时长
     'cookiePath' => "/",
     'cookieDomain' => '',//设置域，默认为当前域名
@@ -84,7 +81,7 @@ return [
     'middleware' => [
         //在实例化控制器之前
         'before' => [
-            YrPHP\Middleware\VerifyCsrfToken::class,
+              YrPHP\Middleware\VerifyCsrfToken::class,
         ],
         //在实例化控制器实例化之后，未调用方法之前
         'middle' => [
