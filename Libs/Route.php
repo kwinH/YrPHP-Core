@@ -398,8 +398,9 @@ class Route
             $dir = trim(substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME']))), '/');
             $this->currentUri = str_replace($dir, '', $_SERVER['REDIRECT_URL']);
         } else {
-            $this->currentUri = str_replace($_SERVER['SCRIPT_NAME'], '/', $_SERVER['PHP_SELF']);
+            $this->currentUri = $this->currentUri = explode('?', str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['REQUEST_URI']))[0];
         }
+
 
         $urlSuffix = C('urlSuffix');
         $urlSuffixLen = strlen($urlSuffix);
