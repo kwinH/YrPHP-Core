@@ -42,16 +42,17 @@ function C($name = null, $default = null)
 function getUrl($url = '', $indexPage = true)
 {
     $baseDir = substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME'])));
-    $base_url = (\request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $baseDir;
+    $baseUrl = (\Request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $baseDir;
 
-    if (!isset($_SERVER['REDIRECT_URL']) && $indexPage) {
-        $base_url .= substr($_SERVER['SCRIPT_NAME'], strlen($baseDir));
+    if (strpos($_SERVER['REQUEST_URI'], basename($_SERVER['SCRIPT_NAME'])) !== false && $indexPage) {
+        $baseUrl .= substr($_SERVER['SCRIPT_NAME'], strlen($baseDir));
     }
 
+    $baseUrl = trim($baseUrl, '/');
     if (!empty($url)) {
-        $base_url .= '/' . ltrim($url, '/');
+        $baseUrl .= '/' . trim($url, '/');
     }
-    return $base_url;
+    return $baseUrl;
 }
 
 /**

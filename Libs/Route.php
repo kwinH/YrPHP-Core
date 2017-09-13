@@ -393,14 +393,15 @@ class Route
             return $this->currentUri;
         }
 
-        if (isset($_SERVER['REDIRECT_URL'])) {
-            //$dir = preg_replace('/(.*)\/.*php$/', '$1', str_replace($_SERVER['DOCUMENT_ROOT'], '', $_SERVER['SCRIPT_FILENAME']));
-            $dir = trim(substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME']))), '/');
-            $this->currentUri = str_replace($dir, '', $_SERVER['REDIRECT_URL']);
+        if (strpos($_SERVER['REQUEST_URI'], basename($_SERVER['SCRIPT_NAME'])) !== false) {
+            $requestUri = substr($_SERVER['REQUEST_URI'], strlen($_SERVER['SCRIPT_NAME']));
+        } elseif (($scriptLen = strlen(dirname($_SERVER['SCRIPT_NAME']))) != 1) {
+            $requestUri = substr($_SERVER['REQUEST_URI'], $scriptLen);
         } else {
-            $this->currentUri = $this->currentUri = explode('?', str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['REQUEST_URI']))[0];
+            $requestUri = $_SERVER['REQUEST_URI'];
         }
 
+        $this->currentUri = explode('?', $requestUri)[0];
 
         $urlSuffix = C('urlSuffix');
         $urlSuffixLen = strlen($urlSuffix);
@@ -553,6 +554,11 @@ class Route
     public function getRoutes()
     {
         return $this->routes;
+    }
+
+    public function getAllRoutes()
+    {
+        return $this->allRoutes;
     }
 
     public function getCurrentRoute()
