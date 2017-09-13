@@ -10,11 +10,16 @@
  */
 namespace YrPHP;
 
+use YrPHP\Console\GeneratorCommand;
+
 class Structure
 {
 
     public static function run()
     {
+        $generatorCommand = new GeneratorCommand();
+        $generatorCommand->classAlias();
+        $generatorCommand->generate();
 
         $fun = <<<st
 <?php
