@@ -173,13 +173,7 @@ class App
             require APP_PATH . 'Config/routes.php';
         }
 
-
-        try {
-            Route::dispatch();
-        } catch (Exception $e) {
-            error404();
-        }
-
+        Route::dispatch();
 
         if (DEBUG && !Request::isAjax()) {
             echo Debug::message();
