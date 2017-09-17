@@ -1142,7 +1142,8 @@ class Model
         $this->getConnectionInstance();
 
         $this->cleanLastSql();
-        if (stripos($sql, 'select') === false) {
+
+        if (stripos($sql, 'select') !== 0) {
             $this->queries[] = $sql;
             $this->db = $this->masterServer;
 
