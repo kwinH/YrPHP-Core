@@ -41,18 +41,29 @@ function C($name = null, $default = null)
  */
 function getUrl($url = '', $indexPage = true)
 {
-    $baseDir = substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], basename($_SERVER['SCRIPT_FILENAME'])));
-    $baseUrl = (\Request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $baseDir;
+    static $arr = [];
 
-    if (strpos($_SERVER['REQUEST_URI'], basename($_SERVER['SCRIPT_NAME'])) !== false && $indexPage) {
-        $baseUrl .= substr($_SERVER['SCRIPT_NAME'], strlen($baseDir));
+    if (empty($arr)) {
+        $arr['scriptFile'] = basename($_SERVER['SCRIPT_FILENAME']);
+        $arr['baseDir'] = substr($_SERVER['SCRIPT_NAME'], 0, strpos($_SERVER['SCRIPT_NAME'], $arr['scriptFile']));
+        $arr['baseUrl'] = (\Request::isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $arr['baseDir'];
     }
 
-    $baseUrl = trim($baseUrl, '/');
+    $uri = $arr['baseUrl'];
+    if (strpos($_SERVER['REQUEST_URI'], $arr['scriptFile']) !== false && $indexPage) {
+        $uri .= $arr['scriptFile'];
+    }
+
+    $uri = trim($uri, '/');
     if (!empty($url)) {
-        $baseUrl .= '/' . trim($url, '/');
+        $uri .= '/' . trim($url, '/');
     }
-    return $baseUrl;
+    return $uri;
+}
+
+function route($name, $params = [])
+{
+    return \Route::url($name, $params);
 }
 
 /**

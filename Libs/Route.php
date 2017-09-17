@@ -82,12 +82,18 @@ class Route
         'any', 'get', 'post', 'put', 'patch', 'delete'
     ];
 
+    /**
+     * uri地址是否自动定位到控制器
+     * @var bool
+     */
+    protected $uriAutoAddressing = false;
 
     public function __construct()
     {
         $this->namespacePrefix = APP . '\\' . C('ctrBaseNamespace') . '\\';
         $this->currentMethod = $this->getmethod();
         $this->getCurrentUri();
+        $this->uriAutoAddressing = C('uriAutoAddressing', false);
     }
 
 
@@ -247,7 +253,12 @@ class Route
         }
         $arr['regex'] = '#' . $arr['regex'] . '?$#is';
 
-        $this->allRoutes = $arr;
+        $this->allRoutes[$uri] = $arr;
+
+        if (is_string($action['uses'])) {
+            $this->actionList[$action['uses']] = $arr;
+        }
+
         if (isset($action['as'])) {
             $this->nameList[$action['as']] = $arr;
         }
@@ -336,7 +347,7 @@ class Route
                 }
             }
         }
-        if (C('uriAutoAddressing', false)) {
+        if ($this->uriAutoAddressing) {
             $this->uriMapping();
         }
 
@@ -513,19 +524,31 @@ class Route
     {
         if (isset($this->nameList[$name])) {
             $route = $this->nameList[$name];
-
-            foreach ($route['params'] as $key => $v) {
-                if (isset($params[$key])) {
-                    $route['params'][$key] = $params[$key];
-                }
-
-                $route['uri'] = str_replace('{' . $key . '}', $route['params'][$key], $route['uri']);
+        } elseif (isset($this->actionList[$name])) {
+            $route = $this->actionList[$name];
+        } elseif ($this->uriAutoAddressing && strpos($name, '@') !== false) {
+            $url = str_replace(['\\', '@'], '/', substr($name, strlen($this->namespacePrefix)));
+            if (!empty($params)) {
+                $url .= '/' . implode('/', $params);
             }
-
-            return $route['uri'];
+            return getUrl($url);
+        } else {
+            throw new Exception('route not found');
         }
-        throw new Exception('route not found');
+
+        foreach ($route['params'] as $key => $v) {
+            $route['params'][$key] = Arr::pop($params, $key, $v);
+            $route['uri'] = str_replace('{' . $key . '}', $route['params'][$key], $route['uri']);
+        }
+
+        if (!empty($params)) {
+            $route['uri'] .= '?' . http_build_query($params);
+        }
+        return getUrl($route['uri']);
+
+
     }
+
 
     public function group($attributes, $callback)
     {
