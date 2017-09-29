@@ -393,7 +393,8 @@ class Form
                 $display = Arr::pop($optionAttr, 'value');
                 $optionAttr = $this->attributesToString($optionAttr);
             }
-            if ($value == $selected) {
+
+            if ((string)$value === (string)$selected) {
                 $html[] = '<option value="' . $value . '"  ' . $optionAttr . ' selected>' . $display . '</option>';
             } else {
                 $html[] = '<option value="' . $value . '"  ' . $optionAttr . '>' . $display . '</option>';
@@ -423,7 +424,7 @@ class Form
     {
         $oldValue = old($name, isset($this->data[$name]) ? $this->data[$name] : null);
         if (!is_null($oldValue)) {
-            if ($oldValue == $value) {
+            if ((string)$oldValue === (string)$value) {
                 $options['checked'] = 'checked';
             }
         } else if ($checked) {
