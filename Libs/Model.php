@@ -789,6 +789,10 @@ class Model
     }
 
 
+    /**
+     * 获取子类中所有访问器和修改器
+     * @return mixed
+     */
     public function getMutatedAttributes()
     {
         $class = get_class($this);
@@ -800,11 +804,17 @@ class Model
         return static::$mutatorCache[$class];
     }
 
+    /**
+     * 匹配子类中所有访问器和修改器
+     * @param $class
+     */
     public static function cacheMutatedAttributes($class)
     {
         $mutatedAttributes = [];
 
-        if (preg_match_all('/(?<=^|;)(get|set)([^;]+?)Attribute(;|$)/', implode(';', get_class_methods($class)), $matches)) {
+        if (preg_match_all('/(?<=^|;)(get|set)([^;]+?)Attribute(;|$)/',
+            implode(';', array_diff(get_class_methods($class), get_class_methods(__CLASS__))),
+            $matches)) {
 
             foreach ($matches[2] as $key => $match) {
 
