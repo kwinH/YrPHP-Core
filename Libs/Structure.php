@@ -110,6 +110,7 @@ st;
             APP_PATH . 'Runtime/Logs/index.html' => $html,
             APP_PATH . 'views/index.html' => $html,
             APP_PATH . 'Middleware/index.html' => $html,
+            APP_PATH . 'Boots/index.html' => $html,
         );
 
 
@@ -118,6 +119,14 @@ st;
         }
         File::cp(BASE_PATH . 'Config', APP_PATH . 'Config');
         File::mkDir(ROOT_PATH . 'public');
+
+        File::vi(
+            APP_PATH . 'Boots/EventBoot.php',
+            str_replace('namespace YrPHP', 'namespace ' . APP,
+                file_get_contents(BASE_PATH . 'Boots/EventBoot.php')
+            )
+        );
+
         header("Location: /");
 
     }

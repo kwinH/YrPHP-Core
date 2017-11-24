@@ -122,6 +122,12 @@ www  WEB部署目录（或者子目录）
 
 #核心
 
+## 引导启动项
+
+系统在完成基本配置会先运行在`Config/config.php`文件中的`boots`项中的所有类下面的`init`方法。
+
+你可以在此做一些配置及预处理。
+
 ## 路由
 
 ### 基本路由
@@ -223,7 +229,6 @@ Route::get('user/{id}/{name}', [
     //
 }
 ]);
-
 ```
 
 
@@ -1388,6 +1393,113 @@ YrPHP提供了一个简易的方法，让您可以保护您的应用程序不受
 {=form::reset('name',['class'=>'button'])}
 {=form::submit('name',['class'=>'button'])}
 {=form::button('name',['class'=>'button'])}
+```
+
+
+
+# 事件系统
+
+Laravel 应用中的`App\Boots\EventBoot` 提供了一个很方便的地方来注册所有的事件监听器。它的 `listen` 属性是一个数组，包含所有的事件（键）以及事件对应的监听器（值）。你也可以根据应用需求来增加事件到这个数组中。例如，增加一个 `ViewLog` 事件：
+
+```php
+/**
+ * 应用程序的事件监听器映射。
+ *
+ * @var array
+ */
+protected $listen = [
+    'App\Boots\ViewLog' => [
+        'App\Boots\ViewLogListen',
+    ],
+];
+```
+
+## 手动注册事件
+
+```php
+ \Event::listen('event.name', function ($param1, $param2) {
+        //
+    });
+```
+
+## 启动监听器
+
+```php
+<?php 
+ \Event::fire('App\Boots\ViewLog');
+```
+
+> 启动监听器，如果是个类则会访问该类下的`handle`方法，如果是个匿名函数，
+> 则会调用这个匿名函数 ，第二个参数是个数组是可以传入给匿名的参数
+
+##事件订阅者
+
+> 事件订阅者是一个在自身内部可以订阅多个事件的类，允许你在单个类中定义多个事件处理器。订阅者应该定义一个 `subscribe` 方法，这个方法接受一个事件分发器的实例。你可以调用事件分发器的 `listen` 方法来注册事件监听器：
+
+```php
+<?php
+
+namespace App\Boots;
+
+class UserEventSubscriber
+{
+    /**
+     * 处理用户登录事件。
+     */
+    public function onUserLogin($event) {}
+
+    /**
+     * 处理用户注销事件。
+     */
+    public function onUserLogout($event) {}
+
+    /**
+     * 为订阅者注册监听器。
+     *
+     * @param  YrPHP\Event  $events
+     */
+    public function subscribe($events)
+    {
+        $events->listen(
+            'App\Boots\UserEventSubscriber\Login',
+            'App\Boots\UserEventSubscriber@onUserLogin'
+        );
+
+        $events->listen(
+            'App\Boots\UserEventSubscriber\Logout',
+            'App\Boots\UserEventSubscriber@onUserLogout'
+        );
+    }
+
+}
+```
+
+
+
+## 注册事件订阅者
+
+一旦订阅者被定义，它就可以被注册到事件分发器中。你可以在 `App\Boots\EventBoot` 类的 `$subscribe` 属性注册订阅者。例如，添加 `UserEventSubscriber` 到列表中：
+
+```php
+<?php
+namespace App\Boots;
+
+use YrPHP\Event;
+
+class EventBoot
+{
+    /**
+     * The event listener mappings for the application.
+     *
+     * @var array
+     */
+    protected $listen = [
+	//
+    ];
+
+    protected $subscribe = [
+	'App\Boots\UserEventSubscriber'
+    ];
 ```
 
 #模型

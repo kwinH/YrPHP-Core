@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Created by YrPHP.
+ * Project: YrPHP.
  * User: Nathan
  * QQ:284843370
  * Email:kwinwong@hotmail.com
@@ -36,6 +36,9 @@ class App
         if (!file_exists(APP)) {
             Structure::run();
         }
+
+        static::loadConf();
+        static::runBoots();
     }
 
     /**
@@ -161,10 +164,17 @@ class App
     }
 
 
+    public static function runBoots()
+    {
+        foreach (C('boots') as $boot) {
+            static::runMethod($boot, 'init');
+        }
+    }
+
     public static function run()
     {
         static::init();
-        static::loadConf();
+
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
         if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
@@ -190,7 +200,6 @@ class App
         }
 
         static::init();
-        static::loadConf();
 
         $class = Config::get('commands.' . $argv[1]);
         if (is_null($class)) {

@@ -29,4 +29,5 @@ return [
     'verifyCode' => 'YrPHP\\VerifyCode',
     'view' => 'YrPHP\\View',
     'route' => 'YrPHP\\Route',
+    'event' => 'YrPHP\\Event',
 ];
