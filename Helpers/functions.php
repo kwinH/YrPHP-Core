@@ -131,22 +131,6 @@ function loadHelper($fileName)
 }
 
 /**
- * 如果存在自定义的模型类，则实例化自定义模型类，如果不存在，则会实例化Model基类,同时对于已实例化过的模型，不会重复去实例化。
- * @param string $modelName 模型类名
- * @return YrPHP\Model
- */
-function M($modelName = "", $connection = null)
-{
-    $modelClass = APP . '\\' . C('modelBaseNamespace') . '\\' . str_replace(['/', '.'], '\\', $modelName);
-    if (class_exists($modelClass)) {
-        return App::loadClass($modelClass);
-    }
-
-    return App::loadClass('YrPHP\Model', parseNaming($modelName, 2), $connection);
-}
-
-
-/**
  * 管理session
  * @param string|array $key
  * @param string $val

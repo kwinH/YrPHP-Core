@@ -18,7 +18,6 @@ return [
     'file' => 'YrPHP\\File',
     'form' => 'YrPHP\\Form',
     'image' => 'YrPHP\\Image',
-    'model' => 'YrPHP\\Model',
     'page' => 'YrPHP\\Page',
     'pipeline' => 'YrPHP\\Pipeline',
     'request' => 'YrPHP\\Request',
@@ -30,4 +29,5 @@ return [
     'view' => 'YrPHP\\View',
     'route' => 'YrPHP\\Route',
     'event' => 'YrPHP\\Event',
+    'db' => 'YrPHP\\Database\\DB'
 ];
