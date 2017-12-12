@@ -1,12 +1,15 @@
 <?php
 /**
- * Created by YrPHP.
+ * Project: YrPHP.
  * User: Kwin
  * QQ:284843370
  * Email:kwinwong@hotmail.com
  * GitHub:https://github.com/kwinH/YrPHP
  */
+
 namespace YrPHP;
+
+use \DB;
 
 class Debug
 {
@@ -54,6 +57,18 @@ class Debug
                     return false;
             }
         }
+    }
+
+    public static function listenSql()
+    {
+        DB::listen(function ($sql, $param, $time) {
+            echo $sql;
+            static::$queries[] = [
+                'sql' => $sql,
+                'time' => $time,
+                'param' => $param
+            ];
+        });
     }
 
     /**
@@ -165,7 +180,7 @@ class Debug
             }
             $mess .= '<li style="word-wrap:break-word;word-break:break-all;overflow: hidden;">[' . $val['time'] . ' 秒]&nbsp;&nbsp;&nbsp;&nbsp;' . $sql;
 
-            $mess .= empty($val['error']) ? "" : '<strong style="color: red">Error:</strong>&nbsp;&nbsp;' . $val['error'];
+            $mess .= json_encode($val['param'],JSON_UNESCAPED_UNICODE);
             $mess .= '</li>';
         }
 

@@ -174,7 +174,6 @@ class App
     public static function run()
     {
         static::init();
-
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
         if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
@@ -185,9 +184,6 @@ class App
 
         Route::dispatch();
 
-        if (DEBUG && !Request::isAjax()) {
-            echo Debug::message();
-        }
     }
 
     /**
