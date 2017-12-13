@@ -14,7 +14,7 @@ use response;
 use YrPHP\IMiddleware;
 use YrPHP\Request;
 
-class DebugListn implements IMiddleware
+class DebugListen implements IMiddleware
 {
 
     public function handler(Request $request, Closure $next)

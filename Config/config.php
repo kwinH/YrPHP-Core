@@ -81,7 +81,7 @@ return [
     'middleware' => [
         //在实例化控制器之前
         'before' => [
-            YrPHP\Middleware\DebugListn::class,
+            YrPHP\Middleware\DebugListen::class,
             YrPHP\Middleware\VerifyCsrfToken::class,
         ],
         //在实例化控制器实例化之后，未调用方法之前

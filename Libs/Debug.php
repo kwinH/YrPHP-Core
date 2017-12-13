@@ -62,7 +62,6 @@ class Debug
     public static function listenSql()
     {
         DB::listen(function ($sql, $param, $time) {
-            echo $sql;
             static::$queries[] = [
                 'sql' => $sql,
                 'time' => $time,
