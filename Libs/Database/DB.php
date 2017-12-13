@@ -14,6 +14,7 @@ use Exception;
 use PDO;
 use PDOException;
 use YrPHP\Arr;
+use YrPHP\Cache;
 use YrPHP\Event;
 
 /**
@@ -78,14 +79,22 @@ class DB
 
     //要被预处理和执行的 SQL 语句
     protected $statement;
-    //错误信息
-    protected $error = [];
 
     //是否开启缓存 bool
     protected $openCache;
+
+    //是否开启缓存,单次有效 bool
+    protected $tmpOpenCache;
+
     // query 预处理绑定的参数
     protected $parameters = [];
-    protected $events;
+
+    /**
+     * 注册的事件
+     * @var array
+     */
+    protected $events = [];
+
     //执行过的sql
     private $queries = [];
 
@@ -101,7 +110,6 @@ class DB
      */
     private $dbConfig = [];
 
-    protected static $tableFields = [];
 
     /**
      * 表模型是否定义
@@ -130,6 +138,8 @@ class DB
             $this->setConnection($this->dbConfig['defaultConnection']);;
         }
 
+        $this->openCache = C('openCache');
+        $this->tmpOpenCache = $this->openCache;
     }
 
 
@@ -254,6 +264,14 @@ class DB
         }
     }
 
+    /**
+     * @param bool $tmpOpenCache
+     */
+    public function setOpenCache($OpenCache = true)
+    {
+        $this->tmpOpenCache = $OpenCache;
+    }
+
 
     /**
      * 给字符串添加反引号
@@ -264,12 +282,12 @@ class DB
     {
         if (empty($field)) {
             return '';
-        }
-
-        if (is_array($field)) {
+        } elseif (is_array($field)) {
             return trim(array_reduce($field, function ($result, $item) {
                 return $result . ',' . $this->escapeId($item);
             }), ',');
+        } elseif ($field instanceof Closure) {
+            return call_user_func($field);
         } else {
             //$fullField[1]为别名
             $fullField = preg_split('/\s(as|\s+)\s*/', trim($field));
@@ -342,34 +360,11 @@ class DB
     {
         $method = strtolower($method);
         if ($method == 'count') {
-            $obj = $this;
-            if (count($args)) {
-                $auto = end($args) !== false;
-                $obj = $obj->table($args[0], $auto);
-            }
-
-            return $obj->first($method . '(*) as c')->c;
+            return $this->first($method . '(*) as c')->c;
         } elseif (in_array($method, array('sum', 'min', 'max', 'avg'))) {
-            $obj = $this;
-            switch (count($args)) {
-                case 1:
-                    $field = $args[0];
-                    break;
-                case 2:
-                    $field = $args[0];
-                    $obj = $obj->table($args[1], true);
-                    break;
-                case 3:
-                    $field = $args[0];
-                    $obj = $obj->table($args[1], (boolean)$args[2]);
-                    break;
-                default:
-                    throw  new Exception('参数错误');
-            }
-
-            return $obj->first($method . '(' . $field . ') as c')->c;
-
+            return $this->first($method . '(' . $args[0] . ') as c')->c;
         }
+
         return $this;
     }
 
@@ -438,7 +433,7 @@ class DB
             }
 
 
-            if ($v instanceof \Closure) {
+            if ($v instanceof Closure) {
                 $this->methods[$type] .= $filed . ' ' . $operator . ' (' . call_user_func($v, new static($this->model)) . ')';
                 $this->parameters = array_merge($this->parameters, $this->model->getParameters());
             } elseif (is_null($v) || (is_string($v) && strripos($v, 'null') !== false)) {
@@ -648,6 +643,34 @@ class DB
     /**
      * @param string $sql
      * @param array $parameters
+     * @return array|bool|mixed
+     */
+    protected final function cache($sql = '', $parameters = [])
+    {
+        $dbCacheKey = md5($sql . json_encode($parameters));
+        $cache = Cache::getInstance();
+
+        if ($this->tmpOpenCache && !$cache->isExpired($dbCacheKey)) {
+            $this->tmpOpenCache = $this->openCache;
+            return $cache->get($dbCacheKey);
+        }
+
+        $this->lastPdo = $this->getSlavePdo();
+        $PDOStatement = $this->lastPdo->prepare($sql);
+        $PDOStatement->execute($parameters);
+        $result = $PDOStatement->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($this->openCache) {
+            $cache->set($dbCacheKey, $result);
+        }
+
+        return $result;
+    }
+
+
+    /**
+     * @param string $sql
+     * @param array $parameters
      * @return array|bool|int
      * @throws Exception
      */
@@ -655,16 +678,14 @@ class DB
     {
         $start = microtime(true);
         $this->statement = $sql;
+        $this->queries[] = $sql;
         $this->model->setSql($sql);
 
         $sqlKey = strtoupper(substr($sql, 0, strpos($sql, ' ')));
 
         try {
             if ($sqlKey === 'SELECT') {
-                $this->lastPdo = $this->getSlavePdo();
-                $PDOStatement = $this->lastPdo->prepare($sql);
-                $PDOStatement->execute($parameters);
-                $result = $PDOStatement->fetchAll(PDO::FETCH_ASSOC);
+                $result = $this->cache($sql, $parameters);
             } else {
                 $this->lastPdo = $this->getMasterPdo();
                 $PDOStatement = $this->lastPdo->prepare($sql);
@@ -688,6 +709,11 @@ class DB
     }
 
 
+    /**
+     * 触发监听事件
+     *
+     * @param $bindings
+     */
     protected function fire($bindings)
     {
         foreach ((array)$this->events as $k => $v) {
@@ -695,6 +721,11 @@ class DB
         }
     }
 
+    /**
+     * 注册监听事件
+     *
+     * @param Closure $callback
+     */
     public function listen(Closure $callback)
     {
         \Event::listen('illuminate.query', $callback);
@@ -706,10 +737,7 @@ class DB
      */
     protected function newModel($data)
     {
-        $model = clone $this->model;
-        $model->setAttributes($data);
-        $model->setOriginal($data);
-        return $model;
+        return new $this->model($data);
     }
 
 
@@ -721,14 +749,14 @@ class DB
     public final function get($field = '*')
     {
         $this->newModel([]);
-        $data = [];
+        $models = [];
         $this->statement = $this->select($field)->toSql();
 
         foreach ($this->query($this->statement, $this->parameters) as $k => $v) {
-            $data[$k] = $this->newModel($v);
+            $models[$k] = $this->newModel($v);
         }
 
-        return new Collection($data);
+        return $this->model->newCollection($models);
     }
 
 

@@ -37,9 +37,9 @@ use YrPHP\Arr;
  * @method DB select($field = [])
  * @method DB except($field = [])
  * @method null|string table($tableName = "", $auto = true)
- * @method null toSql()
+ * @method string toSql()
  * @method array|bool|int query($sql = '', $parameters = [])
- * @method DB get($field = '*')
+ * @method Collection get($field = '*')
  * @method Model first($field = '*')
  * @method DB limit($offset, $length = null)
  * @method DB page($page, $listRows = null)
@@ -287,9 +287,15 @@ class Model implements IteratorAggregate, ArrayAccess
         return loadClass(DB::class, $model);
     }
 
-    public function __call($name, $arguments)
+    public function __call($method, $arguments)
     {
-        return $this->newQuery($this)->$name(...$arguments);
+        return $this->newQuery($this)->$method(...$arguments);
+    }
+
+    public static function __callStatic($method, $arguments)
+    {
+        $model = new static();
+        return $model->newQuery($model)->$method(...$arguments);
     }
 
 
@@ -419,6 +425,16 @@ class Model implements IteratorAggregate, ArrayAccess
 
     }
 
+
+    /**
+     * @param array $models
+     * @return Collection
+     */
+    public function newCollection(array $models = [])
+    {
+        return new Collection($models);
+    }
+
     /**
      * 动态设置模型上的属性
      *
@@ -483,14 +499,6 @@ class Model implements IteratorAggregate, ArrayAccess
     }
 
     /**
-     * @param array $original
-     */
-    public function setOriginal($original)
-    {
-        $this->original = $original;
-    }
-
-    /**
      * @return array
      */
     public function getAttributes()
@@ -499,13 +507,20 @@ class Model implements IteratorAggregate, ArrayAccess
     }
 
     /**
-     * @param array $attributes
+     * @return array
      */
-    public function setAttributes($attributes)
+    public function toArray()
     {
-        $this->attributes = $attributes;
+        return $this->attributes;
     }
 
+    /**
+     * @return string
+     */
+    public function toJson()
+    {
+        return json_encode($this->attributes, JSON_UNESCAPED_UNICODE);
+    }
 
     /**
      * 获取预处理绑定数据

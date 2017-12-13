@@ -71,68 +71,82 @@ class Collection implements IteratorAggregate, ArrayAccess
         }
     }
 
+    /**
+     * Reduce the collection to a single value.
+     *
+     * @param  Closure $callback
+     * @param  mixed $initial
+     * @return mixed
+     */
+    public function reduce(Closure $callback, $initial = null)
+    {
+        return array_reduce($this->items, $callback, $initial);
+    }
+
+
+    /**
+     * @return array
+     */
     public function toArray()
     {
-        return array_map(function ($value) {
-            return $value->getAttributes();
+        return array_map(function (Model $value) {
+            return $value->toArray();
         }, $this->items);
     }
 
+    /**
+     * @return string
+     */
     public function toJson()
     {
         return json_encode($this->toArray(), JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * @return ArrayIterator|\Traversable
+     */
     public function getIterator()
     {
         return new ArrayIterator($this->items);
     }
 
 
+    /**
+     * @param mixed $offset
+     * @return bool
+     */
     public function offsetExists($offset)
     {
         return isset($this->items[$offset]);
     }
 
 
+    /**
+     * @param mixed $offset
+     * @return mixed
+     */
     public function offsetGet($offset)
     {
         return $this->items[$offset];
     }
 
 
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     */
     public function offsetSet($offset, $value)
     {
         $this->items[$offset] = $value;
     }
 
 
+    /**
+     * @param mixed $offset
+     */
     public function offsetUnset($offset)
     {
         unset($this->items[$offset]);
     }
 
-    function __get($name)
-    {
-        if (isset($this->items[$name])) {
-            return $this->items[$name];
-        }
-        return null;
-    }
-
-    /**
-     * @return array
-     */
-    public function getItems()
-    {
-        return $this->items;
-    }
-
-    /**
-     * @param array $items
-     */
-    public function setItems($items)
-    {
-        $this->items = $items;
-    }
 }

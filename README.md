@@ -1517,200 +1517,98 @@ class EventBoot
 - Email:kwinwong@hotmail.com
     */
 
-//数据库配置例子 请将该文件复制到你的项目下的config文件夹下 不允许直接在该文件下配置
-
 return [
-'defaultConnection' => 'default',
-  'default' => [
-    //主服务器
-    'masterServer' => [
-        'dsn' => 'mysql:host=localhost;dbname=huobucuo',
-        'dbDriver' => 'pdo', // 数据库类型
-        'dbType' => 'mysql', // 数据库类型
-        'dbHost' => 'localhost', // 服务器地址
-        'dbName' => 'test', // 数据库名
-        'dbUser' => 'root', // 用户名
-        'dbPwd' => 'root', // 密码
-        'dbPort' => '3306', // 端口
-        'tablePrefix' => 'drp_', // 数据库表前缀
+
+    'defaultConnection' => 'default',
+
+    'default' => [
+
+//        'master' => [],//主服务器
+//        'slave' => [],//从服务器
+        'driver' => 'pdo', // 数据库类型
+        'type' => 'mysql', // 数据库类型
+        'host' => 'localhost', // 服务器地址
+        'dbname' => 'test', // 数据库名
+        'user' => 'root', // 用户名
+        'password' => 'root', // 密码
+        'port' => '3306', // 端口
+        'prefix' => '', // 数据库表前缀
         'charset' => 'utf8',
-    ],
-    //从服务器可以配置多个,也可以不配置，不做读写分离
-    /*
-    'slaveServer'  => [
-        [
-            'dsn'         => '',
-            'dbDriver'    => 'pdo', // 数据库类型
-            'dbType'      => 'mysql', // 数据库类型
-            'dbHost'      => '', // 服务器地址
-            'dbName'      => '', // 数据库名
-            'dbUser'      => '', // 用户名
-            'dbPwd'       => '', // 密码
-            'dbPort'      => '3306', // 端口
-            'charset'     => 'utf8',
-        ],
-        [
-            'dsn'         => '',
-            'dbDriver'    => 'pdo', // 数据库类型
-            'dbType'      => 'mysql', // 数据库类型
-            'dbHost'      => '', // 服务器地址
-            'dbName'      => '', // 数据库名
-            'dbUser'      => '', // 用户名
-            'dbPwd'       => '', // 密码
-            'dbPort'      => '3306', // 端口
-            'charset'     => 'utf8',
-        ],
-    ],
-    */
-]
-  ];
+    ]
+];
 ```
 
 >数据库配置模版文件在BASE_PATH/config/database.php
 >如需修改相关配置
 >
->如果设置了***APP_MODE***
->则在APP_PATH/database**__APP_MODE**.php中修改相关配置
->否则
 >在APP_PATH/database.php中修改相关配置
 
 ##模型定义
 
 > 模型类并非必须定义，只有当存在独立的业务逻辑或者属性的时候才需要定义。
-> 文件名为**模型名.class.php**  UserModel的文件名为**UserModel.class.php**
+> 文件名为**模型名.class.php**  `user表`对应的文件名为**User.php**，如果要修改默认对应的表名，则重写$table属性
 
-模型类通常需要继承系统的YrPHP\Model类或其子类，下面是一个Model\UserModel类的定义：
+模型类通常需要继承系统的YrPHP\Database\Model类或其子类，下面是一个Model\User类的定义：
 
 ```php
 <?php
-namespace App\Model;
-use YrPHP\Model;
+namespace App\Models;
 
-class UserModel extends Model
+use YrPHP\Database\Model;
+
+class User extends Model
 {
 
-    public function __construct()
-    {
-        parent::__construct('users');
-  }
+  //不写 默认操作user表
+    protected $table = 'users';
 
+    function test()
+    {
+       return $this->hasMany('\App\Test');
+    }
 }
 ```
 
 
-##模型实例化
 
-##### M(['模型名']);
->模型名是为选填 如果为空则实例化父类。
-
-
-```php
-M('UserModel');//实例化UserModel模型
-```
-
->实例化请确保参数确定 区分大小写
->如果模型UserModel不存在，则实例化父类 表为user_model
-
-## CURL
-### Active Record 模式
+## 数据库请求构建器
 
 ####添加数据INSERT
-> **$this->insert([添加的数据]);**
+> **insert(array $data);**
 
 ```php
-namespace App\Model;
-use YrPHP\Model;
-class UserModel extends Model
-{
-    public function __construct()
-    {
-        parent::__construct('users');//操作users表
-  }
+//return int 受影响行数
+\DB::table('user')->insert(['name'=>'kwin','age'=>'18']);
+       
 
-    public function userInsert()
-    {
-      return $this->insert(['name'=>'kwin','age'=>'18']);
-       //return int 受影响行数
-  }
-  
-  
-      public function userInserts()
-    {
-      return $this->inserts([
-        ['name'=>'kwin','age'=>'18'],
-        ['name'=>'nathan','age'=>'26']
-      ]);
-       //return int 受影响行数
-  }
-}
+//inserts支付批量添加
+//return int 受影响行数
+ \DB::table('user')->inserts([
+  ['name'=>'kwin','age'=>'18'],
+  ['name'=>'nathan','age'=>'26']
+]);
 ```
->添加的数据如果为空,则获取$_POST数据，默认开启验证，如果字段数据库不存在 则过滤
->如果有临时关闭则 $this->setOptions(array('_validate'=>false));
->
->inserts支付批量添加
 
 ------------
 
 
 ####删除数据DELETE
 
-> **$this->delete(条件);**
+> **delete($where = []);**
 
-**在自定义模型在调用**
 ```php
 <?php
-namespace App\Model;
-use YrPHP\Model;
-class UserModel extends Model
-{
-
-    public function __construct()
-    {
-        parent::__construct('users');
-  }
-
-    public function userDelete()
-    {
-     return $this->delete(['id <'=>3]);
-     //return int 受影响行数
-  }
-}
+  //return int 受影响行数
+  \DB::table('user')->delete(['id <'=>3]);
 ```
 >条件为array|string 推荐array
 
-------------
-
-
-***在控制器在调用***
-```php
-    <?php
-    use core\Controller;
-    
-    class Users extends Controller
-    {
-        function __construct()
-        {
-            parent::__construct();
-        }
-    
-       //直接调用父类model，操作users表
-        function  model()
-        {
-         $db = M('users');
-         $db->delete([是否自动添加前缀bool]);
-    
-        }
-       //实例化刚才创建的模型，操作其方法
-        function  userModel()
-        {
-         $db = M('UserModel');
-         $db->userDelete();
-        }
-```
-
 ####修改数据
+
+> **update($data=[],$where=[])**
+
 ```php
-$this->update(array 数据，array 条件);
+\DB::table('user')->update(['name'=>'kwin']],['id'=>1]]);
 //return int 受影响行数
 ```
 >条件为array|string 推荐array
@@ -1719,49 +1617,18 @@ $this->update(array 数据，array 条件);
 
 ####查询数据
 
-**FIND**
->**find($id = 0, $assoc = false)
->string|int $id 查询的条件主键值
->bool|false $assoc 当该参数为 TRUE 时，将返回 array 而非 object
->以主键为条件 查询
-
-------------
-```php
-$db = M('users');
-$db->find(1);
-//生成的SQL语句
-//select * from `users` where id=1;
-```
-
-**ALL**
->**all($assoc = false, $tableName = "", $auto = true)
->bool|false $assoc 当该参数为 TRUE 时，将返回 array 而非 object
->以主键为条件 查询
-
-------------
-```php
-$db = M('users');
-$db->find(1);
-//生成的SQL语句
-//select * from `users` where id=1;
-```
-
 **GET**
->**get(\$tableName = "", $auto = true)**
+>**get($field = '*')**
 >
->生产最后的SQL一句
->
->string $tableName 表名
->$auto 是否自动添加表前缀
+>return YrPHP\Database\Collection
 
-------------
 ```php
-$this->get([表名]，[是否自动添加前缀bool]);
+\DB::table('user')->get('id','name');
 //生成的SQL语句
-//select * from `tableName`;
+//select `id`,`name` from `user`;
 ```
 
-**SELECT|FIELD**
+**SELECT**
 
 >**select($field =[],[...])**
 >
@@ -1778,13 +1645,13 @@ $this->get([表名]，[是否自动添加前缀bool]);
 ------------
 
 ```php
-$this->select('field1,field2,field3')->all();
+\DB::table('user')->select('field1,field2,field3')->get();
 //生成的SQL语句
-//select `field1`,`field2`,`field3` from `tableName`;
+//select `field1`,`field2`,`field3` from `user`;
 
-$this->select(['field1','field2','field3'])->all();
+\DB::table('user')->get(['field1','field2','field3']);
 //生成的SQL语句
-//select `field1`,`field2`,`field3` from `tableName`;
+//select `field1`,`field2`,`field3` from `user`;
 
 
 ```
@@ -1799,9 +1666,9 @@ $this->select(['field1','field2','field3'])->all();
 
 ```php
 //查询一条数据
-$this->limit(1)->all();
+\DB::table('user')->limit(1)->get();
 //生成的SQL语句
-//select * from `tableName` limit 1;
+//select * from `user` limit 1;
 ```
 
 **WHERE**
@@ -1824,48 +1691,48 @@ $this->limit(1)->all();
 
 ```php
 
-$this->where("id='100'")->all();
+\DB::table('user')->where("id='100'")->get();
 //生成的SQL语句
-//select * from `tableName` where （id = '100'）;
+//select * from `user` where (id = '100');
 
-$this->->where("id='1659'")->where(array('id !='=>'1113','name like'=>'%nathan%'))->get('users');//前缀在config/database.php 设置 tablePrefix
+\DB::table('user')->where("id='1659'")->where(array('id !='=>'1113','name like'=>'%kwin%'))->get();//前缀在config/database.php 设置 tablePrefix
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` where (id='1659') or ( `id` != '1113'  or  `name` like '%nathan%' )
+//SELECT  *  FROM  `prefix_user` where (id='1659') or ( `id` != '1113'  or  `name` like '%kwin%' )
 
 
-$this->where("id='1596'")->where(array('id !='=>'1113','or fullname like'=>'%nathan%',
-'and update_time between'=>array(10000 , 100000000)))->get('users');
+\DB::table('user')->where("id='1596'")->where(array('id !='=>'1113','or fullname like'=>'%kwin%',
+'and update_time between'=>array(10000 , 100000000)))->get();
 //前缀在config/database.php 设置 tablePrefix
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` where (id='1596') and ( `id` != '1113'  or  `fullname` like '%nathan%'  and  `update_time` between '10000' and '100000000' )
+//SELECT  *  FROM  `prefix_user` where (id='1596') and ( `id` != '1113'  or  `fullname` like '%kwin%'  and  `update_time` between '10000' and '100000000' )
 
-$this->where(array('id in'=>array(1,2,3,4,5,6,7,8,9,10)))->get('users');
+\DB::table('user')->where(array('id in'=>array(1,2,3,4,5,6,7,8,9,10)))->get();
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` where ( `id` in(1,2,3,4,5,6,7,8,9,10))
+//SELECT  *  FROM  `prefix_user` where ( `id` in(1,2,3,4,5,6,7,8,9,10))
 ```
->where 可以用连贯查询 一组where会用()包含
+>where 可以用连贯查询 一组where会用`()`包含
 
 **ORDER**
 ```php
-$this->order('id desc')->all();
+\DB::table('user')->order('id desc')->get();
 //生成的SQL语句
- SELECT  *  FROM  `yrp_users` ORDER BY `id` desc
+ SELECT  *  FROM  `prefix_user` ORDER BY `id` desc
 ```
 
 **GROUP**
 ```php
-$this->order('ip')->all();
+\DB::table('user')->order('ip')->get();
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` `GROUP BY `ip`
+//SELECT  *  FROM  `prefix_user` `GROUP BY `ip`
 ```
 
 **HAVING**
 >同WHERE
 
 ```php
-$this->group('id')->having(array('id >'=>'2000'))->get('users');
+\DB::table('user')->group('id')->having(array('id >'=>'2000'))->get('users');
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` GROUP BY `id` having ( `id` > '2000' )
+//SELECT  *  FROM  `prefix_user` GROUP BY `id` having ( `id` > '2000' )
 ```
 
 **JOIN**
@@ -1877,133 +1744,76 @@ $this->group('id')->having(array('id >'=>'2000'))->get('users');
 
 
 ```php
-$this->join('users as b', ['a.id'=>'b.id'], 'left')->get('users as a');
+\DB::table('orders as a')->join('user as b', ['a.id'=>'b.id'], 'left')->get();
 //生成的SQL语句
-//SELECT  *  FROM  `yrp_users` as `a` LEFT JOIN `yrp_users` as `b` ON `a`.`id`=`b`.`id`
+//SELECT  *  FROM  `prefix_orders` as `a` LEFT JOIN `prefix_user` as `b` ON `a`.`id`=`b`.`id`
 ```
 
 ##计算
 
 **统计COUNT**
->**count($tableName,$auto = true)
->$tableName 表名
->$auto 是否自动添加前缀 bool 默认true**
+>**count()**
 
 ```php
-$this->count('users');
+\DB::table('user')->count();
 //同
-$this->select('count(*) as count')->get('users')->row()->count;
+\DB::table('user')->select('count(*) as count')->get()->row()->count;
 //生成的SQL语句
-//SELECT COUNT(*) as `count` FROM  `yrp_users`
+//SELECT COUNT(*) as `count` FROM  `prefix_user`
 ```
 
 **最大值MAX**
->**max($tableName,$field,$auto = true)
->$tableName 表名
->$field 字段名 不能为空
->$auto 是否自动添加前缀 bool 默认true**
+>**max()**
+>
 
 ```php
-$this->max('users','id');
+\DB::table('user')->max('id');
 //同
-$this->select('max(id) as max')->get('users')->row()->max;
+\DB::table('user')->select('max(id) as max')->get()->row()->max;
 //生成的SQL语句
-//SELECT MAX(id) as `max` FROM  `yrp_users`
+//SELECT MAX(`id`) as `max` FROM  `prefix_user`
 ```
 
 **最小值MIN**
->**min($tableName,$field,$auto = true)
->$tableName 表名
->$field 字段名 不能为空
->$auto 是否自动添加前缀 bool 默认true**
+>**min()**
 
 ```php
-$this->min('users','id');
+\DB::table('user')->min('id');
 //同
-$this->select('min(id) as min')->get('users')->row()->min;
+\DB::table('user')->select('min(id) as min')->get('users')->row()->min;
 //生成的SQL语句
-//SELECT MIN(id) as `min` FROM  `yrp_users`
+//SELECT MIN(`id`) as `min` FROM  `prefix_user`
 ```
 
 **累计值SUM**
->**sum($tableName,$field,$auto = true)
->$tableName 表名
->$field 字段名 不能为空
->$auto 是否自动添加前缀 bool 默认true**
+>**sum()**
 
 ```php
-$this->sum('users','id');
+\DB::table('user')->sum('id');
 //同
-$this->select('sum(id) as sum')->get('users');
+\DB::table('user')->select('sum(id) as sum')->get();
 //生成的SQL语句
-//SELECT SUM(id) as `sum` FROM  `yrp_users`
+//SELECT SUM(`id`) as `sum` FROM  `prefix_user`
 ```
 
 **平均值SUM**
->**sum($tableName,$field,$auto = true)
->$tableName 表名
->$field 字段名 不能为空
->$auto 是否自动添加前缀 bool 默认true**
+>**sum()**
 
 ```php
-$this->avg('users','id');
+\DB::table('user')->avg('users','id');
 //同
-$this->select('avg(id) as avg')->get('users');
+\DB::table('user')->select('avg(id) as avg')->get();
 //生成的SQL语句
-//SELECT AVG(id) as `avg` FROM  `yrp_users`
-```
-##查询结果返回
-
-####row($assoc = false) 查询一条结果
->**@param bool|false $assoc 当该参数为 TRUE 时，将返回 array 而非 object  当查询价格为空时 返回false
->**
-
-```php
-//查询一条数据 返回对象格式
-$this->select('id')->where(array('id'=>1))->get('users')->row();
-//返还一条数据 当查询结果为空时 返回false
-//stdClass::__set_state(array( 'id' => '231', ))
-
-//查询一条数据 返回数组格式
-$this->select('id')->where(array('id'=>1))->get('users')->row(true);
-//返还一条数据 当查询结果为空时 返回false
-//array(1) { ["id"]=> string(3) "231" }
+//SELECT AVG(`id`) as `avg` FROM  `prefix_user`
 ```
 
-------------
-
-
-####result($assoc = false) 查询一条结果
->**@param bool|false $assoc 当该参数为 TRUE 时，将返回 array 而非 object  当查询价格为空时 返回一个空的数组array()
->**
-
-```php
-//查询所有数据 返回对象格式
-$this->select('id')->get('users')->result();
-//返还一条数据 当查询结果为空时 返回一个空的数组array()
-//array ( 0 => stdClass::__set_state(array( 'id' => '1', )), 1 => stdClass::__set_state(array( 'id' => '2', )), 2 => stdClass::__set_state(array( 'id' => '3', )), .....)
-
-//查询所有数据 返回数组格式
-$this->select('id')->get('users')->result(true);
-//返还所以数据 当查询结果为空时 返回一个空的数组array()
-//array ( 0 => array ( 'id' => '1', ), 1 => array ( 'id' => '2', ), 2 => array ( 'id' => '3', ),....)
-```
-
-####rowCount() — 返回受上一个 SQL 语句影响的行数
-
-```php
-$db = M();
-$re = $db->select('id')->get('users')->result();
-echo  $db->rowCount();//输出查询结果总条数
-```
 
 ##query 操作SQL
 ```php
-$db = M();
-$re = $db->query("select * from yrp_users")->result();
-//查询 同 $db->get('yrp_users')
+//返回一个包含结果集中所有行的数组,只获取列名
+$re = \DB::query("select * from prefix_users");
 
-$re = $db->query("update yrp_users name='nathan' where id=500")->rowCount();
+$re = $db->query("update prefix_users name='nathan' where id=500")->rowCount();
 //修改 返回受影响的行数
 ```
 
@@ -2015,26 +1825,16 @@ $re = $db->query("update yrp_users name='nathan' where id=500")->rowCount();
 3. commit(); 事务提交
 4. rollback(); 事务回滚
 
-####属性
-**public $transStatus;bool 事务是否发生错误**
-
 ```php
-$m = M('users');
-$t= $m->transaction(function () use($m) {
-  $m->insert(['name' => 'q1']);
 
+$t= \DB::transaction(function () use($m) {
+  $m->insert(['name' => 'q1']);
    $m->insert(['name' => 'q17567']);
    $m->insert(['name1' => 'q3', 'age' => 24]);
 
-})->transStatus;
-var_export($t);
-
-
-
-
-
-
-
+});
+//当恒等于true时，成功，其余情况为失败
+var_export($t===true);
 ```
 
 
@@ -2042,31 +1842,25 @@ var_export($t);
 
 ```php
 try{
-$this->startTrans();
-$this->query('一条SQL查询...');
+\DB::startTrans();
+\DB::query('一条SQL查询...');
 
-$this->query('另一条查询...');
+\DB::query('另一条查询...');
   
-re = this->query('还有一条查询...');
-$this->commit();
+re = \DB::query('还有一条查询...');
+\DB::commit();
 }catch (\Exception $e){
-$m->rollback();
+\DB::rollback();
 }
 ```
 
 
 
-##错误调试
-```php
-$db = M();
-$error = $db->error();//返回的是一个数组array
-var_export($error);
-```
-
 ##数据缓存
+
 ```php
 //获得缓存实例 $dbCacheType 缓存驱动，有file memcache、memcached、redis,默认为file
-$cache = core\cache::getInstance($dbCacheType = null);
+$cache = YrPHP\Cache::getInstance($dbCacheType = null);
 
 /**
 * 设置缓存
@@ -2129,20 +1923,19 @@ $this->setCache(false);
 
 ##lastQuery() 查询上一条SQL语句
 ```php
-$db = M();
-$re = $db->get('users')->result();
-echo $db->lastQuery();
-//select * from `yrp_users`
+$re = \DB::get('users');
+echo \DB::lastQuery();
+//select * from `prefix_users`
 ```
 
-
+；
 
 ## 使用多数据库连接
 
-当你使用了多个连接时，则可以通过  `connection` 方法来访问每个连接。传递给 `connection` 方法的 `name` 必须对应至 `config/database.php` 配置文件中的连接列表的其中一个：
+当你使用了多个连接时，则可以通过  `setconnection` 方法来访问每个连接。传递给 `setconnection` 方法的 `name` 必须对应至 `config/database.php` 配置文件中的连接列表的其中一个：
 
 ```php
-$users = M()->connection('foo')->select(...);
+$users = M()->setconnection('two')->select(...);
 ```
 
 
@@ -2157,7 +1950,7 @@ $users = M()->connection('foo')->select(...);
 <?PHP
 namespace App\Models;
 
-use YrPHP\Model;
+use YrPHP\Database\Model;
 
 class User extends Model
 {
@@ -2202,7 +1995,7 @@ $user = M('User')->closePreProcess()->find(1);
 
 namespace App\Models;
 
-use YrPHP\Model;
+use YrPHP\Database\Model;
 
 class User extends Model
 {
