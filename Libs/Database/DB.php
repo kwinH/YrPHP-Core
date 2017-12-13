@@ -703,6 +703,7 @@ class DB
             throw  new Exception($errorSql, $e->getCode());
 
         } finally {
+            $this->parameters = [];
             $time = round((microtime(true) - $start) * 1000, 2);
             \Event::fire('illuminate.query', [$sql, $parameters, $time]);
         }

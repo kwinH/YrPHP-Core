@@ -159,22 +159,27 @@ class Model implements IteratorAggregate, ArrayAccess
      * 以主键为条件 查询
      * @param int $id 查询的条件主键值
      * @return Model
+     * @throws \Exception
      */
-    public function find($id = 0)
+    public static function find($id = 0)
     {
-        return $this->newQuery($this)
-            ->where([$this->getKeyName() => $id])
+        $instance = new static;
+        return $instance->newQuery($instance)
+            ->where([$instance->getKeyName() => $id])
             ->first();
     }
+
 
     /**
      * 集合
      * @param string $field
      * @return Collection
+     * @throws \Exception
      */
-    public function all($field = '*')
+    public static function all($field = '*')
     {
-        return $this->newQuery($this)->get($field);
+        $instance = new static;
+        return $instance->newQuery($instance)->get($field);
     }
 
     /**
@@ -209,17 +214,19 @@ class Model implements IteratorAggregate, ArrayAccess
      * 删除
      * @param null $ids
      * @return int
+     * @throws \Exception
      */
-    public final function destroy($ids = null)
+    public static function destroy($ids = null)
     {
-        $db = new DB($this);
+        $model = new  static();
+        $db = new DB($model);
         $argsNum = func_num_args();
-        $primaryKey = $this->getKeyName();
+        $primaryKey = $model->getKeyName();
         if (func_num_args() === 0) {
-            if (isset($this->original[$this->primaryKey])) {
-                $where[$this->primaryKey] = $this->original[$this->primaryKey];
+            if (isset($model->original[$model->primaryKey])) {
+                $where[$model->primaryKey] = $model->original[$model->primaryKey];
             } else {
-                $where = $this->original;
+                $where = $model->original;
             }
         } else if ($argsNum > 1) {
             $where[$primaryKey . ' in'] = func_get_args();
@@ -236,7 +243,7 @@ class Model implements IteratorAggregate, ArrayAccess
      * 获取子类中所有访问器或则修改器
      * @return array
      */
-    public function getMutatedAttributes($type = 'get')
+    protected function getMutatedAttributes($type = 'get')
     {
         $class = get_class($this);
 
@@ -251,7 +258,7 @@ class Model implements IteratorAggregate, ArrayAccess
      * 匹配子类中所有访问器和修改器
      * @param $class
      */
-    public static function cacheMutatedAttributes($class)
+    protected static function cacheMutatedAttributes($class)
     {
         $mutatedAttributes = [
             'get' => [],

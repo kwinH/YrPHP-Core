@@ -1543,32 +1543,6 @@ return [
 >
 >在APP_PATH/database.php中修改相关配置
 
-##模型定义
-
-> 模型类并非必须定义，只有当存在独立的业务逻辑或者属性的时候才需要定义。
-> 文件名为**模型名.class.php**  `user表`对应的文件名为**User.php**，如果要修改默认对应的表名，则重写$table属性
-
-模型类通常需要继承系统的YrPHP\Database\Model类或其子类，下面是一个Model\User类的定义：
-
-```php
-<?php
-namespace App\Models;
-
-use YrPHP\Database\Model;
-
-class User extends Model
-{
-
-  //不写 默认操作user表
-    protected $table = 'users';
-
-    function test()
-    {
-       return $this->hasMany('\App\Test');
-    }
-}
-```
-
 
 
 ## 数据库请求构建器
@@ -1935,8 +1909,38 @@ echo \DB::lastQuery();
 当你使用了多个连接时，则可以通过  `setconnection` 方法来访问每个连接。传递给 `setconnection` 方法的 `name` 必须对应至 `config/database.php` 配置文件中的连接列表的其中一个：
 
 ```php
-$users = M()->setconnection('two')->select(...);
+$users = M()->setconnection('two')->query(...);
 ```
+
+
+
+## 模型定义
+
+> 模型类并非必须定义，只有当存在独立的业务逻辑或者属性的时候才需要定义。
+> 文件名为**模型名.class.php**  `user表`对应的文件名为**User.php**，如果要修改默认对应的表名，则重写$table属性
+
+模型类通常需要继承系统的YrPHP\Database\Model类或其子类，下面是一个Model\User类的定义：
+
+```php
+<?php
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class User extends Model
+{
+
+  //不写 默认操作user表
+    protected $table = 'users';
+
+    function test()
+    {
+       return $this->hasMany('\App\Test');
+    }
+}
+```
+
+
 
 
 
