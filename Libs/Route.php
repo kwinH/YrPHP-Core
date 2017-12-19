@@ -128,10 +128,10 @@ class Route
 
     public function __construct()
     {
-        $this->setNamespacePrefix(APP . '\\' . C('ctrBaseNamespace'));
+        $this->setNamespacePrefix(APP . '\\' . Config::get('ctrBaseNamespace'));
         $this->currentMethod = $this->getmethod();
         $this->getCurrentUri();
-        $this->uriAutoAddressing = C('uriAutoAddressing', false);
+        $this->uriAutoAddressing = Config::get('uriAutoAddressing', false);
     }
 
 
@@ -514,7 +514,7 @@ class Route
 
         $this->currentUri = explode('?', $requestUri)[0];
 
-        $urlSuffix = C('urlSuffix');
+        $urlSuffix = Config::get('urlSuffix');
         $urlSuffixLen = -(strlen($urlSuffix));
 
         if (substr($this->currentUri, $urlSuffixLen) == $urlSuffix) {
@@ -592,7 +592,7 @@ class Route
 
         Config::set([
             'ctlPath' => $this->currentRoute['ctlPath'],
-            'ctlName' => trim(strrchr($controller, '/')),
+            'ctlName' => $this->ctlName,
             'actName' => $this->actName,
             'nowAction' => $this->currentRoute['action']['uses'],
             'param' => $this->currentRoute['params'],
@@ -642,8 +642,7 @@ class Route
         array_unshift($params, $ctlObj, $this->actName);
         $request->view = call_user_func_array('App::runMethod', $params);
 
-        App::pipeline()
-            ->send($request)
+        Pipeline::send($request)
             ->through(Config::get('middleware.after'))
             ->then(function ($request) {
                 $this->after($request);
@@ -739,6 +738,7 @@ class Route
     }
 
     /**
+     * 所有路由数组
      * @return array
      */
     public function getAllRoutes()
@@ -747,6 +747,7 @@ class Route
     }
 
     /**
+     * 当前路由
      * @return array
      */
     public function getCurrentRoute()
@@ -755,11 +756,30 @@ class Route
     }
 
     /**
+     * 当前 HTTP 请求方法
      * @return string
      */
     public function getCurrentMethod()
     {
         return $this->currentMethod;
+    }
+
+    /**
+     * 当前控制器名
+     * @return string
+     */
+    public function getCtlName()
+    {
+        return $this->ctlName;
+    }
+
+    /**
+     * 当前方法名
+     * @return string
+     */
+    public function getActName()
+    {
+        return $this->actName;
     }
 
 }
