@@ -6,34 +6,127 @@
  * Email:kwinwong@hotmail.com
  * GitHub:https://github.com/kwinH/YrPHP
  */
+
 namespace YrPHP;
 class View
 {
-    protected static $callNumber = 0;    //防止重复调用
-    protected $templateDir;  //定义通过模板引擎组合后文件存放目录
-    protected $comFileName;  //编译好的模版文件名
-    protected $compileDir; //定义编译文件存放目录
-    protected $ctlFile;//控制器文件
-    protected $caching = true;   //bool 设置缓存是否开启
-    protected $cacheLifeTime = 3600;  //定义缓存时间
-    protected $cacheDir;      //定义生成的缓存文件路径
-    protected $cacheSubDir;   //定义生成的缓存文件的子目录默认为控制器名
-    protected $cacheFileName; //定义生成的缓存文件名 默认为方法名
-    private $cacheFile;      //最后形成的缓存完整路径
-    private $cacheContent = '';//缓存内容
+    /**
+     * 防止重复调用
+     * @var int
+     */
+    protected static $callNumber = 0;
 
-    protected $leftDelimiter = '{';   //在模板中嵌入动态数据变量的左定界符号
-    protected $rightDelimiter = '}'; //在模板中嵌入动态数据变量的右定界符号
-    protected $rule = array();//替换搜索的模式的数组 array(搜索的模式 => 用于替换的字符串 )
-    private $tplVars = array(); //内部使用的临时变量
+    /**
+     * 定义通过模板引擎组合后文件存放目录
+     * @var
+     */
+    protected $templateDir;
 
-    public $block = [];//section内容块
+    /**
+     * 编译好的模版文件名
+     * @var
+     */
+    protected $comFileName;
 
+    /**
+     * 定义编译文件存放目录
+     * @var
+     */
+    protected $compileDir;
+
+    /**
+     * 控制器文件
+     * @var
+     */
+    protected $ctlFile;
+
+    /**
+     * 设置缓存是否开启
+     * @var bool
+     */
+    protected $caching = true;
+
+    /**
+     * 定义缓存时间
+     * @var int
+     */
+    protected $cacheLifeTime = 3600;
+
+    /**
+     * 定义生成的缓存文件路径
+     * @var
+     */
+    protected $cacheDir;
+
+    /**
+     * 定义生成的缓存文件的子目录默认为控制器名
+     * @var
+     */
+    protected $cacheSubDir;
+
+    /**
+     * 定义生成的缓存文件的子目录默认为控制器名
+     * @var
+     */
+    protected $cacheFileName;
+
+    /**
+     * 定义生成的缓存文件名 默认为方法名
+     * @var
+     */
+    protected $tplFile;
+
+    /**
+     * 最后形成的缓存完整路径
+     * @var
+     */
+    private $cacheFile;
+
+    /**
+     * 缓存内容
+     * @var string
+     */
+    private $cacheContent = '';
+
+    /**
+     * 在模板中嵌入动态数据变量的左定界符号
+     * @var string
+     */
+    protected $leftDelimiter = '{';
+
+    /**
+     * 在模板中嵌入动态数据变量的右定界符号
+     * @var string
+     */
+    protected $rightDelimiter = '}';
+
+    /**
+     * 替换搜索的模式的数组 array(搜索的模式 => 用于替换的字符串 )
+     * @var array
+     */
+    protected $rule = array();
+
+    /**
+     * 内部使用的临时变量
+     * @var array
+     */
+    private $tplVars = array();
+
+    /**
+     * section内容块
+     * @var array
+     */
+    public $block = [];
+
+    /**
+     * 缓存状态 恒等于false时，不生成缓存文件
+     * @var bool
+     */
     public $cacheStatus = true;
 
-    public function __construct()
+    public function __construct($config = [])
     {
-        $this->setConfig();
+        $this->setConfig($config);
 
         $this->leftDelimiter = preg_quote($this->leftDelimiter, '/');//转义正则表达式字符
         $this->rightDelimiter = preg_quote($this->rightDelimiter, '/');//转义正则表达式字符
@@ -57,17 +150,18 @@ class View
     public function setConfig($config = [])
     {
         if (empty($config)) {
-            $this->templateDir = C('setTemplateDir');       //定义模板文件存放的目录
-            $this->compileDir = C('setCompileDir');      //定义通过模板引擎组合后文件存放目录
-            $this->caching = C('caching');     //缓存开关 1开启，0为关闭
-            $this->cacheLifeTime = C('cacheLifetime');  //设置缓存的时间 0代表永久缓存
-            $this->cacheDir = C('setCacheDir');      //设置缓存的目录
-            $this->leftDelimiter = C('leftDelimiter');          //在模板中嵌入动态数据变量的左定界符号
-            $this->rightDelimiter = C('rightDelimiter'); //模板文件中使用的“右”分隔符号
+            $this->templateDir = Config::get('setTemplateDir');       //定义模板文件存放的目录
+            $this->compileDir = Config::get('setCompileDir');      //定义通过模板引擎组合后文件存放目录
+            $this->caching = Config::get('caching');     //缓存开关 1开启，0为关闭
+            $this->cacheLifeTime = Config::get('cacheLifetime');  //设置缓存的时间 0代表永久缓存
+            $this->cacheDir = Config::get('setCacheDir');      //设置缓存的目录
+            $this->leftDelimiter = Config::get('leftDelimiter');          //在模板中嵌入动态数据变量的左定界符号
+            $this->rightDelimiter = Config::get('rightDelimiter'); //模板文件中使用的“右”分隔符号
 
-            $this->ctlFile = C('classPath');//控制器文件
-            $this->cacheSubDir = C('cacheSubDir', C('ctlName')); //定义生成的缓存文件的子目录默认为控制器名
-            $this->cacheFileName = C('cacheFileName', C('actName'));//定义生成的缓存文件名 默认为方法名
+            $this->ctlFile = Config::get('classPath');//控制器文件
+
+            $this->cacheSubDir = Config::get('cacheSubDir', \Route::getCtlName()); //定义生成的缓存文件的子目录默认为控制器名
+            $this->cacheFileName = Config::get('cacheFileName', \Route::getActName());//定义生成的缓存文件名 默认为方法名
         } else {
             foreach ($config as $k => $v) {
                 $this->$k = $v;
@@ -93,6 +187,7 @@ class View
      * @param    string $fileName 提供模板文件的文件名
      * @param    array $tpl_var 需要一个字符串参数作为关联数组下标，要和模板中的变量名对应
      * @param    string 当$cacheId为false时，不会生成缓存文件，其他情况做为缓存ID,当有个文件有多个缓存时，$cacheId不能为空，否则会重复覆盖
+     * @throws Exception
      */
     public function display($fileName, $tplVars = '', $cacheId = '')
     {
@@ -116,61 +211,74 @@ class View
     }
 
 
+    /**
+     * 生成编译好的模版
+     * @param $fileName
+     * @param string $tplVars
+     * @return bool|null|string|string[]
+     * @throws Exception
+     */
     public function buildTplFile($fileName, $tplVars = '')
     {
         if (!empty($tplVars)) {
             $this->tplVars = array_merge($this->tplVars, $tplVars);
         }
 
-        /* 到指定的目录中寻找模板文件 */
-        $fileName = strpos($fileName, '.') !== false ? $fileName : ($fileName . '.' . C('templateExt'));
-        $tplFile = $this->templateDir . $fileName;
 
-        /* 如果需要处理的模板文件不存在,则退出并报告错误 */
-        if (!file_exists($tplFile)) {
-            throw new Exception("模板文件{$tplFile}不存在！");
+        $this->getComFileName($fileName);
+
+        if (
+            !file_exists($this->comFileName) ||
+            filemtime($this->comFileName) < filemtime($this->tplFile) ||
+            filemtime($this->comFileName) < filemtime($this->ctlFile)
+        ) {
+            $repContent = $this->tplReplace(file_get_contents($this->tplFile));
+
+            $this->setBlock($repContent);
+
+            /* 保存由系统组合后的脚本文件 */
+            file_put_contents($this->comFileName, $repContent);
+            return $repContent;
         }
 
+        return file_get_contents($this->comFileName);
+
+    }
+
+
+    /**
+     * 获取编译好的模版文件名
+     * @param $fileName
+     * @throws Exception
+     */
+    protected function getComFileName($fileName)
+    {
+        /* 到指定的目录中寻找模板文件 */
+        $fileName = strpos($fileName, '.') !== false ? $fileName : ($fileName . '.' . Config::get('templateExt'));
+        $this->tplFile = $this->templateDir . $fileName;
+
+        /* 如果需要处理的模板文件不存在,则退出并报告错误 */
+        if (!file_exists($this->tplFile)) {
+            throw new Exception("模板文件{$this->tplFile}不存在！");
+        }
+
+
         /* 获取组合的模板文件，该文件中的内容都是被替换过的 */
-        $comFileDir = $this->compileDir . C('ctlName') . (strpos($fileName, '/') === false ? '' : '/' . dirname($fileName));
+        $comFileDir = $this->compileDir . str_replace('\\', '/', \Route::getCtlName());
 
         if (!file_exists($comFileDir)) {
             File::mkDir($comFileDir);
         }
 
-        $tempComFileName = $comFileDir . '/' . basename($fileName) . '.php';
-
-        if (is_null($this->comFileName)) {
-            $this->comFileName = $tempComFileName;
-        }
-
-        if (!file_exists($tempComFileName) || filemtime($tempComFileName) < filemtime($tplFile) || filemtime($tempComFileName) < filemtime($this->ctlFile)) {
-            $repContent = $this->tplReplace(file_get_contents($tplFile));
-
-            $this->setBlock($repContent);
-
-            /* 保存由系统组合后的脚本文件 */
-            file_put_contents($tempComFileName, $repContent);
-            return $repContent;
-        }
-
-        return file_get_contents($tempComFileName);
-
+        $this->comFileName = $comFileDir . '/' . str_replace(['\\', '/'], '_', $fileName);
     }
 
 
-    public function getComFileName($fileName)
-    {
-        /* 到指定的目录中寻找模板文件 */
-        $fileName = strpos($fileName, '.') !== false ? $fileName : ($fileName . '.' . C('templateExt'));
-
-        /* 获取组合的模板文件，该文件中的内容都是被替换过的 */
-        $this->comFileName = $this->compileDir . C('ctlName') . '/' . $fileName . '.php';
-
-        return $this->comFileName;
-    }
-
-
+    /**
+     * 正则匹配替换标签
+     * @param $content
+     * @return null|string|string[]
+     */
     private function tplReplace($content)
     {
         $this->rule['/' . $this->leftDelimiter . '=(.*)\s*' . $this->rightDelimiter . '/isU'] = "<?php echo \\1;?>";//输出变量、常量或函数
@@ -203,6 +311,10 @@ class View
             $content);
     }
 
+    /**
+     * 将内容块保存到block数组中
+     * @param $data
+     */
     public function setBlock($data)
     {
         preg_match_all('/' . $this->leftDelimiter . 'section\s+(.*)\s*' . $this->rightDelimiter . '(.*)' .
@@ -214,6 +326,10 @@ class View
     }
 
 
+    /**
+     * 将布局替换成内容块
+     * @throws Exception
+     */
     protected function blockExtends()
     {
 
@@ -239,7 +355,8 @@ class View
 
     /**
      * 静态化
-     * @param    string $cacheId 缓存ID 当有个文件有多个缓存时，$cacheId不能为空，否则会重复覆盖
+     * @param string $cacheId 缓存ID 当有个文件有多个缓存时，$cacheId不能为空，否则会重复覆盖
+     * @return bool
      */
     public function init($cacheId = '')
     {
@@ -269,7 +386,7 @@ class View
                 static::$callNumber++;
             }
         }
-
+        return true;
     }
 
     /**
