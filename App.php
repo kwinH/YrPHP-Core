@@ -223,7 +223,8 @@ class App
     {
         //取得所有参数
         $arguments = func_get_args();
-        $key = md5(json_encode($arguments));
+        $key = md5(serialize($arguments));
+
         //弹出第一个参数，这是类名，剩下的都是要传给实例化类的构造函数的参数了
         $className = array_shift($arguments);
 
