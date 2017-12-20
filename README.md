@@ -1502,7 +1502,7 @@ class EventBoot
     ];
 ```
 
-#模型
+#数据库
 
 ##数据库配置
 
@@ -1552,12 +1552,12 @@ return [
 
 ```php
 //return int 受影响行数
-\DB::table('user')->insert(['name'=>'kwin','age'=>'18']);
+DB::::table('user')->insert(['name'=>'kwin','age'=>'18']);
        
 
 //inserts支付批量添加
 //return int 受影响行数
- \DB::table('user')->inserts([
+ DB::::table('user')->inserts([
   ['name'=>'kwin','age'=>'18'],
   ['name'=>'nathan','age'=>'26']
 ]);
@@ -1573,7 +1573,7 @@ return [
 ```php
 <?php
   //return int 受影响行数
-  \DB::table('user')->delete(['id <'=>3]);
+  DB::::table('user')->delete(['id <'=>3]);
 ```
 >条件为array|string 推荐array
 
@@ -1582,7 +1582,7 @@ return [
 > **update($data=[],$where=[])**
 
 ```php
-\DB::table('user')->update(['name'=>'kwin']],['id'=>1]]);
+DB::::table('user')->update(['name'=>'kwin']],['id'=>1]]);
 //return int 受影响行数
 ```
 >条件为array|string 推荐array
@@ -1597,7 +1597,7 @@ return [
 >return YrPHP\Database\Collection
 
 ```php
-\DB::table('user')->get('id','name');
+DB::::table('user')->get('id','name');
 //生成的SQL语句
 //select `id`,`name` from `user`;
 ```
@@ -1619,11 +1619,11 @@ return [
 ------------
 
 ```php
-\DB::table('user')->select('field1,field2,field3')->get();
+DB::::table('user')->select('field1,field2,field3')->get();
 //生成的SQL语句
 //select `field1`,`field2`,`field3` from `user`;
 
-\DB::table('user')->get(['field1','field2','field3']);
+DB::::table('user')->get(['field1','field2','field3']);
 //生成的SQL语句
 //select `field1`,`field2`,`field3` from `user`;
 
@@ -1640,7 +1640,7 @@ return [
 
 ```php
 //查询一条数据
-\DB::table('user')->limit(1)->get();
+DB::::table('user')->limit(1)->get();
 //生成的SQL语句
 //select * from `user` limit 1;
 ```
@@ -1665,22 +1665,22 @@ return [
 
 ```php
 
-\DB::table('user')->where("id='100'")->get();
+DB::::table('user')->where("id='100'")->get();
 //生成的SQL语句
 //select * from `user` where (id = '100');
 
-\DB::table('user')->where("id='1659'")->where(array('id !='=>'1113','name like'=>'%kwin%'))->get();//前缀在config/database.php 设置 tablePrefix
+DB::::table('user')->where("id='1659'")->where(array('id !='=>'1113','name like'=>'%kwin%'))->get();//前缀在config/database.php 设置 tablePrefix
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` where (id='1659') or ( `id` != '1113'  or  `name` like '%kwin%' )
 
 
-\DB::table('user')->where("id='1596'")->where(array('id !='=>'1113','or fullname like'=>'%kwin%',
+DB::::table('user')->where("id='1596'")->where(array('id !='=>'1113','or fullname like'=>'%kwin%',
 'and update_time between'=>array(10000 , 100000000)))->get();
 //前缀在config/database.php 设置 tablePrefix
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` where (id='1596') and ( `id` != '1113'  or  `fullname` like '%kwin%'  and  `update_time` between '10000' and '100000000' )
 
-\DB::table('user')->where(array('id in'=>array(1,2,3,4,5,6,7,8,9,10)))->get();
+DB::::table('user')->where(array('id in'=>array(1,2,3,4,5,6,7,8,9,10)))->get();
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` where ( `id` in(1,2,3,4,5,6,7,8,9,10))
 ```
@@ -1688,14 +1688,14 @@ return [
 
 **ORDER**
 ```php
-\DB::table('user')->order('id desc')->get();
+DB::::table('user')->order('id desc')->get();
 //生成的SQL语句
  SELECT  *  FROM  `prefix_user` ORDER BY `id` desc
 ```
 
 **GROUP**
 ```php
-\DB::table('user')->order('ip')->get();
+DB::::table('user')->order('ip')->get();
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` `GROUP BY `ip`
 ```
@@ -1704,7 +1704,7 @@ return [
 >同WHERE
 
 ```php
-\DB::table('user')->group('id')->having(array('id >'=>'2000'))->get('users');
+DB::::table('user')->group('id')->having(array('id >'=>'2000'))->get('users');
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` GROUP BY `id` having ( `id` > '2000' )
 ```
@@ -1718,80 +1718,81 @@ return [
 
 
 ```php
-\DB::table('orders as a')->join('user as b', ['a.id'=>'b.id'], 'left')->get();
+DB::::table('orders as a')->join('user as b', ['a.id'=>'b.id'], 'left')->get();
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_orders` as `a` LEFT JOIN `prefix_user` as `b` ON `a`.`id`=`b`.`id`
 ```
 
-##计算
+### 聚合查询
 
-**统计COUNT**
+#### 统计COUNT
+
 >**count()**
 
 ```php
-\DB::table('user')->count();
+DB::table('user')->count();
 //同
-\DB::table('user')->select('count(*) as count')->get()->row()->count;
+DB::table('user')->select('count(*) as count')->get()->row()->count;
 //生成的SQL语句
 //SELECT COUNT(*) as `count` FROM  `prefix_user`
 ```
 
-**最大值MAX**
+#### 最大值MAX
 >**max()**
 >
 
 ```php
-\DB::table('user')->max('id');
+DB::::table('user')->max('id');
 //同
-\DB::table('user')->select('max(id) as max')->get()->row()->max;
+DB::::table('user')->select('max(id) as max')->get()->row()->max;
 //生成的SQL语句
 //SELECT MAX(`id`) as `max` FROM  `prefix_user`
 ```
 
-**最小值MIN**
+#### 最小值MIN
 >**min()**
 
 ```php
-\DB::table('user')->min('id');
+DB::::table('user')->min('id');
 //同
-\DB::table('user')->select('min(id) as min')->get('users')->row()->min;
+DB::::table('user')->select('min(id) as min')->get('users')->row()->min;
 //生成的SQL语句
 //SELECT MIN(`id`) as `min` FROM  `prefix_user`
 ```
 
-**累计值SUM**
+#### 累计值SUM
 >**sum()**
 
 ```php
-\DB::table('user')->sum('id');
+DB::::table('user')->sum('id');
 //同
-\DB::table('user')->select('sum(id) as sum')->get();
+DB::::table('user')->select('sum(id) as sum')->get();
 //生成的SQL语句
 //SELECT SUM(`id`) as `sum` FROM  `prefix_user`
 ```
 
-**平均值SUM**
+#### 平均值SUM
 >**sum()**
 
 ```php
-\DB::table('user')->avg('users','id');
+DB::::table('user')->avg('users','id');
 //同
-\DB::table('user')->select('avg(id) as avg')->get();
+DB::::table('user')->select('avg(id) as avg')->get();
 //生成的SQL语句
 //SELECT AVG(`id`) as `avg` FROM  `prefix_user`
 ```
 
 
-##query 操作SQL
+### query 操作SQL
 ```php
 //返回一个包含结果集中所有行的数组,只获取列名
-$re = \DB::query("select * from prefix_users");
+$re = DB::::query("select * from prefix_users");
 
-$re = $db->query("update prefix_users name='nathan' where id=500")->rowCount();
+$re = DB::::query("update prefix_users name='nathan' where id=500")->rowCount();
 //修改 返回受影响的行数
 ```
 
-##事务
+## 事务
 
 ####要使用事务来运行你的查询, 你可以使用如下方法:
 1. startTrans(); 开启事务
@@ -1801,7 +1802,7 @@ $re = $db->query("update prefix_users name='nathan' where id=500")->rowCount();
 
 ```php
 
-$t= \DB::transaction(function () use($m) {
+$t= DB::::transaction(function () use($m) {
   $m->insert(['name' => 'q1']);
    $m->insert(['name' => 'q17567']);
    $m->insert(['name1' => 'q3', 'age' => 24]);
@@ -1816,15 +1817,15 @@ var_export($t===true);
 
 ```php
 try{
-\DB::startTrans();
-\DB::query('一条SQL查询...');
+DB::::startTrans();
+DB::::query('一条SQL查询...');
 
-\DB::query('另一条查询...');
+DB::::query('另一条查询...');
   
-re = \DB::query('还有一条查询...');
-\DB::commit();
+re = DB::::query('还有一条查询...');
+DB::::commit();
 }catch (\Exception $e){
-\DB::rollback();
+DB::::rollback();
 }
 ```
 
@@ -1897,27 +1898,28 @@ $this->setCache(false);
 
 ##lastQuery() 查询上一条SQL语句
 ```php
-$re = \DB::get('users');
-echo \DB::lastQuery();
+$re = DB::::get('users');
+echo DB::::lastQuery();
+//等同于 DB::::lastSql()
 //select * from `prefix_users`
 ```
 
-；
+
 
 ## 使用多数据库连接
 
 当你使用了多个连接时，则可以通过  `setconnection` 方法来访问每个连接。传递给 `setconnection` 方法的 `name` 必须对应至 `config/database.php` 配置文件中的连接列表的其中一个：
 
 ```php
-$users = M()->setconnection('two')->query(...);
+$users = DB::::setconnection('two')->query(...);
 ```
 
-
+# 模型
 
 ## 模型定义
 
 > 模型类并非必须定义，只有当存在独立的业务逻辑或者属性的时候才需要定义。
-> 文件名为**模型名.class.php**  `user表`对应的文件名为**User.php**，如果要修改默认对应的表名，则重写$table属性
+> 文件名为**模型名.php**  `user表`对应的文件名为**User.php**，如果要修改默认对应的表名，则重写$table属性
 
 模型类通常需要继承系统的YrPHP\Database\Model类或其子类，下面是一个Model\User类的定义：
 
@@ -1929,18 +1931,75 @@ use YrPHP\Database\Model;
 
 class User extends Model
 {
-
+  //链接用database配置里的`conn1`数组
+  protected $connection = 'conn1';
+  
   //不写 默认操作user表
-    protected $table = 'users';
+  protected $table = 'users';
 
-    function test()
-    {
-       return $this->hasMany('\App\Test');
-    }
+  //默认主键为`id` 改写为`uid`
+  protected $primaryKey = 'uid';
+  
 }
 ```
 
 
+
+## 取回单个模型
+
+```php
+// 通过主键取回一个模型...
+$user = User::find(1);
+
+// 取回符合查询限制的第一个模型 ...
+$data = User::where(['status'=>1])->first();
+echo $data->name;
+echo $data['age'];
+```
+
+
+
+## 取回集合
+
+> 返回的所有多结果集都是 `YrPHP\Database\Collection` 对象的实例。所有的集合都可以作为迭代器，可以就像简单的 PHP 数组一样来遍历它们：
+
+```PHP
+// 取回符合查询限制的所有模型 ...
+$users = User::where(['name like'=>'%李%'])->get();
+
+foreach ($users as $user) {
+    echo $user->name;
+  	echo $user['age'];
+}
+```
+
+
+
+## 新增
+
+```PHP
+$user           = new User;
+$user->name     = 'kwin';
+$user->email    = 'kwinwong@hotmail.com';
+$user->save();
+```
+
+## 更新
+
+```php
+$user = User::find(1);
+$user->name     = 'kwin';
+$user->email    = 'kwinwong@hotmail.com';
+$user->save();
+```
+
+## 删除
+
+```php
+User::destroy(1);
+User::destroy([1, 2, 3]);
+User::destroy(1, 2, 3);
+```
 
 
 
@@ -1948,7 +2007,7 @@ class User extends Model
 
 ### 定义一个访问器
 
-若要定义一个访问器，则必须在你的模型上创建一个 `getFooAttribute` 方法。要访问的 `Foo` 字段需使用「驼峰式」来命名。在这个例子中，我们将为 `first_name` 属性定义一个访问器。当 Eloquent 尝试获取 `first_name` 的值时，将会自动调用此访问器：
+若要定义一个访问器，则必须在你的模型上创建一个 `getFooAttribute` 方法。要访问的 `Foo` 字段需使用「驼峰式」来命名。在这个例子中，我们将为 `first_name` 属性定义一个访问器。当 Model 尝试获取 `first_name` 的值时，将会自动调用此访问器：
 
 ```php
 <?PHP
@@ -1980,12 +2039,12 @@ class User extends Model
 如你所见的，字段原始的值被传递到访问器中，让你可以操作并返回结果。如果要访问被修改的值，则可以像这样来访问 `first_name` 属性：
 
 ```php
-$user = M('User')->find(1);
+$user = User::find(1);
 
 $firstName = $user->first_name;
 
 //closePreProcess方法可以临时关闭访问器和修改器
-$user = M('User')->closePreProcess()->find(1);
+$user = User::closePreProcess()->find(1);
 ```
 
 
@@ -2016,16 +2075,108 @@ class User extends Model
 }
 ```
 
-修改器会获取属性已经被设置的值，让你可以操作该值并将其设置到 Eloquent 模型内部的 `$attributes` 属性上。举个例子，如果我们尝试将 `first_name` 属性设置成 `Sally`：
+修改器会获取属性已经被设置的值，让你可以操作该值并将其设置到 模型内部的 `$attributes` 属性上。举个例子，如果我们尝试将 `first_name` 属性设置成 `Sally`：
 
 ```php
-$user = Model('User')->insert(['first_name'=>'Sally'])；
+$user = User::insert(['first_name'=>'Sally'])；
   
   //closePreProcess方法可以临时关闭访问器和修改器
-$user = M('User')->closePreProcess()->insert(['first_name'=>'Sally'])；
+$user = User::closePreProcess()->insert(['first_name'=>'Sally'])；
 ```
 
 在这个例子中，`setFirstNameAttribute` 函数将会使用 `Sally` 作为参数来调用。修改器会对该名字使用`strtolower` 函数并将其值返回。
+
+
+## 模型关联
+
+### 一对一
+一对一关联是最基本的关联关系。例如，一个 User 模型可能关联一个 Identity 模型。为了定义这个关联，我们要在 User 模型中写一个 identity 方法，在 identity 方法内部调用 hasOne 方法并返回其结果：
+```php
+<?php
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class User extends Model
+{
+
+  //不写 默认操作user表
+  protected $table = 'users';
+
+  
+    function identity()
+    {
+       return $this->hasOne('\App\Models\Identity');
+    }
+}
+```
+
+hasOne 方法的第一个参数是关联模型的类名。关联关系定义好后，我们就可以动态属性获得相关的记录。您可以像在访问模型中定义的属性一样，使用动态属性：
+
+```PHP
+$identity = User::find(1)->identity;
+```
+
+
+默认会基于模型名决定外键名称。在当前场景中，会假设 Identity 模型有一个 user_id 外键，如果外键名不是这个，可以通过给 hasOne 方法传递第二个参数覆盖默认使用的外键名：
+
+return $this->hasOne('App\Phone', 'foreign_key');
+此外，Model会假定外键值是与父级 id（或自定义 $primaryKey）列的值相匹配的。 换句话说，会将在 Phone 记录的 user_id 列中查找与用户表的 id 列相匹配的值。 如果您希望该关联使用 id以外的自定义键名，则可以给 hasOne 方法传递第三个参数：
+
+```PHP
+return $this->hasOne('App\Phone', 'foreign_key', 'local_key');
+```
+
+
+
+### 一对多
+
+「一对多」关联用于定义单个模型拥有任意数量的其它关联模型。例如，一个人可能会有多张银行卡帐号。
+
+```php
+<?php
+
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class User extends Model
+{
+    /**
+     * 获得该用户下绑定的所有银行卡。
+     */
+    public function bankCard()
+    {
+        return $this->hasOne('\App\Models\BankCard');
+    }
+}
+```
+
+记住，Model 会自动确定 `BankCard` 模型上正确的外键字段。按照约定，Model 使用父级表名、加上 `_id` 后缀名作为外键字段。对应到上面的场景，就是 Model 假定 `Comment` 模型对应到 `User` 模型上的那个外键字段是 `user_id`。
+
+关联关系定义好后，我们就可以通过访问 `bankCard` 属性获得评论集合。记住，因为 Model 提供了「动态属性」，所以我们可以像在访问模型中定义的属性一样，访问关联方法：
+
+```PHP
+$bankCards = User::find(1)->bankCard;
+
+foreach ($bankCards as $bankCard) {
+    //
+}
+```
+
+当然，由于所有的关联还可以作为查询语句构造器使用，因此你可以使用链式调用的方式、在 `comments` 方法上添加额外的约束条件：
+
+```PHP
+$comments = User::find(1)->bankCard()->where(['status'=>1])->first();
+```
+
+形如 `hasOne` 方法，您也可以在使用 `hasMany` 方法的时候，通过传递额外参数来覆盖默认使用的外键与本地键。
+
+```php
+return $this->hasMany('\App\Models\BankCard', 'foreign_key');
+
+return $this->hasMany('\App\Models\BankCard', 'foreign_key', 'local_key');
+```
 
 ------------
 
