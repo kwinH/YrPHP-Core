@@ -15,7 +15,8 @@ use PDO;
 use PDOException;
 use YrPHP\Arr;
 use YrPHP\Cache;
-use YrPHP\Event;
+use YrPHP\Config;
+use Event;
 
 /**
  * @method int count()
@@ -131,14 +132,14 @@ class DB
             $this->exists = true;
         }
 
-        $this->dbConfig = C('database');
+        $this->dbConfig = Config::get('database');
         if ($this->exists && ($connection = $this->model->getConnection())) {
             $this->setConnection($connection);
         } else {
-            $this->setConnection($this->dbConfig['defaultConnection']);;
+            $this->setConnection($this->dbConfig['defaultConnection']);
         }
 
-        $this->openCache = C('openCache');
+        $this->openCache = Config::get('openCache');
         $this->tmpOpenCache = $this->openCache;
     }
 
@@ -270,6 +271,14 @@ class DB
     public function setOpenCache($OpenCache = true)
     {
         $this->tmpOpenCache = $OpenCache;
+    }
+
+    /**
+     * @return Model
+     */
+    public function getModel()
+    {
+        return $this->model;
     }
 
 
@@ -705,7 +714,7 @@ class DB
         } finally {
             $this->parameters = [];
             $time = round((microtime(true) - $start) * 1000, 2);
-            \Event::fire('illuminate.query', [$sql, $parameters, $time]);
+            Event::fire('illuminate.query', [$sql, $parameters, $time]);
         }
     }
 
@@ -729,7 +738,7 @@ class DB
      */
     public function listen(Closure $callback)
     {
-        \Event::listen('illuminate.query', $callback);
+        Event::listen('illuminate.query', $callback);
     }
 
     /**

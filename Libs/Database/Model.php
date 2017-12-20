@@ -13,6 +13,7 @@ use ArrayAccess;
 use ArrayIterator;
 use IteratorAggregate;
 use YrPHP\Arr;
+use YrPHP\Exception;
 
 
 /**
@@ -60,42 +61,77 @@ use YrPHP\Arr;
  */
 class Model implements IteratorAggregate, ArrayAccess
 {
+    /**
+     * 缓存子类中所有访问器和则修改器
+     * @var array
+     */
     protected static $mutatorCache = [];
+
     /**
      * 原始数据
      * @var array
      */
     protected $original = [];
+
     /**
-     *
+     * 查询出来的数据数组
      * @var array
      */
     protected $attributes = [];
 
     /**
      * 模型的加载关系
-     *
      * @var array
      */
     protected $relations = [];
 
+    /**
+     * 数据是单条还是多条 one|many
+     * @var null
+     */
     protected $relationType = null;
 
+    /**
+     * 默认主键
+     * @var string
+     */
     protected $primaryKey = 'id';
-    protected $table = null;
 
+    /**
+     * 链接标识 不用默认链接 可重写
+     * @var null
+     */
     protected $connection = null;
 
+    /**
+     * 表名称
+     * @var null
+     */
+    protected $table = null;
+
+    /**
+     * 对应的SQL语句
+     * @var
+     */
     protected $sql;
 
+    /**
+     * 预处理绑定的数据
+     * @var array
+     */
     protected $parameters = [];
+
+    /**
+     * 是否关闭访问器和修改器
+     * @var bool
+     */
+    protected static $preProcessStatus = true;
 
     public function __construct(array $attributes = [])
     {
         $this->original = $attributes;
         $this->attributes = $attributes;
     }
-
 
     /**
      * 获取当前连接
@@ -182,9 +218,11 @@ class Model implements IteratorAggregate, ArrayAccess
         return $instance->newQuery($instance)->get($field);
     }
 
+
     /**
      * 添加/修改
-     * @return bool|mixed|string
+     * @return bool|int|mixed
+     * @throws \Exception
      */
     public function save()
     {
@@ -239,12 +277,30 @@ class Model implements IteratorAggregate, ArrayAccess
         return $db->delete($where);
     }
 
+
+    /**
+     * 临时关闭访问器和修改器功能
+     * @return $this
+     */
+    public static function closePreProcess()
+    {
+        static::$preProcessStatus = false;
+
+        $instance = new static;
+        return $instance;
+    }
+
     /**
      * 获取子类中所有访问器或则修改器
      * @return array
      */
-    protected function getMutatedAttributes($type = 'get')
+    public function getMutatedAttributes($type = 'get')
     {
+        if (static::$preProcessStatus === false) {
+            static::$preProcessStatus = true;
+            return [];
+        }
+
         $class = get_class($this);
 
         if (!isset(static::$mutatorCache[$class])) {
@@ -368,10 +424,6 @@ class Model implements IteratorAggregate, ArrayAccess
      */
     public function hasOne($related, $foreignKey = null, $localKey = null)
     {
-        if (!class_exists($related)) {
-            return new static();
-        }
-
         /**
          * @var $instance Model
          */
@@ -381,7 +433,10 @@ class Model implements IteratorAggregate, ArrayAccess
         $localKey = $localKey ? $localKey : $this->getKeyName();
 
         $instance->setRelationType('one');
+
         return $this->newQuery($instance)->where([$foreignKey => $this->original[$localKey]]);
+
+
     }
 
     /**
@@ -393,9 +448,6 @@ class Model implements IteratorAggregate, ArrayAccess
      */
     public function hasMany($related, $foreignKey = null, $localKey = null)
     {
-        if (!class_exists($related)) {
-            return [];
-        }
         /**
          * @var $instance Model
          */
@@ -417,11 +469,11 @@ class Model implements IteratorAggregate, ArrayAccess
     {
         if (!isset($this->relations[$key]) && method_exists($this, $key)) {
             /**
-             * @var $query Model
+             * @var $query DB
              */
             $query = $this->$key();
 
-            if ($query->getRelationType() == 'one') {
+            if ($query->getModel()->getRelationType() == 'one') {
                 $this->relations[$key] = $query->first();
             } else {
                 $this->relations[$key] = $query->get();
@@ -454,7 +506,11 @@ class Model implements IteratorAggregate, ArrayAccess
         $this->setAttribute($key, $value);
     }
 
-    function __get($name)
+    /**
+     * @param $name
+     * @return mixed|null
+     */
+    public function __get($name)
     {
         if (isset($this->attributes[$name])) {
             return $this->getPreProcess($name, $this->attributes[$name]);
@@ -498,6 +554,7 @@ class Model implements IteratorAggregate, ArrayAccess
     }
 
     /**
+     * 获取没被修改器修改过的原始数据
      * @return array
      */
     public function getOriginal()
@@ -514,6 +571,7 @@ class Model implements IteratorAggregate, ArrayAccess
     }
 
     /**
+     * 转换成数组
      * @return array
      */
     public function toArray()
@@ -522,6 +580,7 @@ class Model implements IteratorAggregate, ArrayAccess
     }
 
     /**
+     * 转换成JSON格式
      * @return string
      */
     public function toJson()
