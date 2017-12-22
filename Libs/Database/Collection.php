@@ -9,62 +9,103 @@
 namespace YrPHP\Database;
 
 use ArrayAccess;
-use ArrayIterator;
 use Closure;
 use IteratorAggregate;
+use YrPHP\Database\Traits\ArrayAccessTrait;
+use YrPHP\Database\Traits\IteratorITrait;
 
 class Collection implements IteratorAggregate, ArrayAccess
 {
-    protected $items = [];
+    use IteratorITrait,
+        ArrayAccessTrait;
+
+    protected $attributes = [];
 
     public function __construct($array = [])
     {
-        $this->items = $array;
+        $this->attributes = $array;
     }
 
+    /**
+     * 取集合第一条数据
+     * @return Model
+     */
     public function first()
     {
-        return reset($this->items);
+        return reset($this->attributes);
     }
 
+    /**
+     * 取集合最后一条数据
+     * @return Model
+     */
     public function last()
     {
-        return end($this->items);
+        return end($this->attributes);
     }
 
+
+    /**
+     * 将集合最后一个单元弹出（出栈）
+     * @return Model
+     */
     public function pop()
     {
-        array_pop($this->items);
+        return array_pop($this->attributes);
     }
 
+    /**
+     * 从集合中随机取一条数据
+     * @return Model
+     */
     public function random()
     {
-        array_rand($this->items);
+        return array_rand($this->attributes);
     }
 
+    /**
+     * 集合如果为空 则为真
+     * @return bool
+     */
     public function isEmpty()
     {
-        return empty($this->items);
+        return empty($this->attributes);
     }
 
+    /**
+     * 集合如果不为空 则为真
+     * @return bool
+     */
     public function isNotEmpty()
     {
-        return !empty($this->items);
+        return !empty($this->attributes);
     }
 
+    /**
+     * 读取集合
+     * @return array
+     */
     public function all()
     {
-        return $this->items;
+        return $this->attributes;
     }
 
+    /**
+     * 集合总条数
+     * @return int
+     */
     public function count()
     {
-        return count($this->items);
+        return count($this->attributes);
     }
 
+    /**
+     * 迭代集合中的内容并将其传递到回调函数中
+     * @param Closure $callback
+     */
     public function each(Closure $callback)
     {
-        foreach ($this->items as $key => $item) {
+        foreach ($this->attributes as $key => $item) {
             if ($callback($key, $item) === false) {
                 break;
             }
@@ -72,7 +113,7 @@ class Collection implements IteratorAggregate, ArrayAccess
     }
 
     /**
-     * Reduce the collection to a single value.
+     * 用回调函数迭代地将集合数组简化为单一的值
      *
      * @param  Closure $callback
      * @param  mixed $initial
@@ -80,21 +121,33 @@ class Collection implements IteratorAggregate, ArrayAccess
      */
     public function reduce(Closure $callback, $initial = null)
     {
-        return array_reduce($this->items, $callback, $initial);
+        return array_reduce($this->attributes, $callback, $initial);
+    }
+
+    /**
+     * 将回调函数作用到集合数组的单元上
+     * @param Closure $callback
+     * @return array
+     */
+    public function map(Closure $callback)
+    {
+        return array_map($callback, $this->attributes);
     }
 
 
     /**
+     * 将集合转换成 PHP 数组
      * @return array
      */
     public function toArray()
     {
         return array_map(function (Model $value) {
             return $value->toArray();
-        }, $this->items);
+        }, $this->attributes);
     }
 
     /**
+     * 将集合转换成 JSON 字符串
      * @return string
      */
     public function toJson()
@@ -102,51 +155,5 @@ class Collection implements IteratorAggregate, ArrayAccess
         return json_encode($this->toArray(), JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * @return ArrayIterator|\Traversable
-     */
-    public function getIterator()
-    {
-        return new ArrayIterator($this->items);
-    }
-
-
-    /**
-     * @param mixed $offset
-     * @return bool
-     */
-    public function offsetExists($offset)
-    {
-        return isset($this->items[$offset]);
-    }
-
-
-    /**
-     * @param mixed $offset
-     * @return mixed
-     */
-    public function offsetGet($offset)
-    {
-        return $this->items[$offset];
-    }
-
-
-    /**
-     * @param mixed $offset
-     * @param mixed $value
-     */
-    public function offsetSet($offset, $value)
-    {
-        $this->items[$offset] = $value;
-    }
-
-
-    /**
-     * @param mixed $offset
-     */
-    public function offsetUnset($offset)
-    {
-        unset($this->items[$offset]);
-    }
 
 }

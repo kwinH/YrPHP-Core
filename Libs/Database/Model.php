@@ -13,6 +13,8 @@ use ArrayAccess;
 use ArrayIterator;
 use IteratorAggregate;
 use YrPHP\Arr;
+use YrPHP\Database\Traits\ArrayAccessTrait;
+use YrPHP\Database\Traits\IteratorITrait;
 use YrPHP\Exception;
 
 
@@ -61,6 +63,11 @@ use YrPHP\Exception;
  */
 class Model implements IteratorAggregate, ArrayAccess
 {
+
+    use HasRelationships,
+        IteratorITrait,
+        ArrayAccessTrait;
+
     /**
      * 缓存子类中所有访问器和则修改器
      * @var array
@@ -85,11 +92,6 @@ class Model implements IteratorAggregate, ArrayAccess
      */
     protected $relations = [];
 
-    /**
-     * 数据是单条还是多条 one|many
-     * @var null
-     */
-    protected $relationType = null;
 
     /**
      * 默认主键
@@ -415,75 +417,6 @@ class Model implements IteratorAggregate, ArrayAccess
         return empty($this->original);
     }
 
-    /**
-     * 定义一对一关系
-     *
-     * @param  string $related
-     * @param  string $foreignKey
-     * @param  string $localKey
-     */
-    public function hasOne($related, $foreignKey = null, $localKey = null)
-    {
-        /**
-         * @var $instance Model
-         */
-        $instance = new $related;
-
-        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
-        $localKey = $localKey ? $localKey : $this->getKeyName();
-
-        $instance->setRelationType('one');
-
-        return $this->newQuery($instance)->where([$foreignKey => $this->original[$localKey]]);
-
-
-    }
-
-    /**
-     * 定义一对多关系
-     * @param $related
-     * @param null $foreignKey
-     * @param null $localKey
-     * @return DB|array
-     */
-    public function hasMany($related, $foreignKey = null, $localKey = null)
-    {
-        /**
-         * @var $instance Model
-         */
-        $instance = new $related;
-
-        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
-        $localKey = $localKey ? $localKey : $this->getKeyName();
-
-        $instance->setRelationType('many');
-        return $this->newQuery($instance)->where([$foreignKey => $this->original[$localKey]]);
-    }
-
-    /**
-     * 获取关联数据
-     * @param $key
-     * @return mixed|null
-     */
-    protected function getRelationValue($key)
-    {
-        if (!isset($this->relations[$key]) && method_exists($this, $key)) {
-            /**
-             * @var $query DB
-             */
-            $query = $this->$key();
-
-            if ($query->getModel()->getRelationType() == 'one') {
-                $this->relations[$key] = $query->first();
-            } else {
-                $this->relations[$key] = $query->get();
-            }
-        }
-
-        return empty($this->relations[$key]) ? null : $this->relations[$key];
-
-    }
-
 
     /**
      * @param array $models
@@ -506,9 +439,11 @@ class Model implements IteratorAggregate, ArrayAccess
         $this->setAttribute($key, $value);
     }
 
+
     /**
      * @param $name
      * @return mixed|null
+     * @throws \Exception
      */
     public function __get($name)
     {
@@ -520,22 +455,6 @@ class Model implements IteratorAggregate, ArrayAccess
 
     }
 
-    /**
-     * @return null
-     */
-    public function getRelationType()
-    {
-        return $this->relationType;
-    }
-
-    /**
-     * 设置返回数据是单条还是多条
-     * @param null $relationType one|many
-     */
-    protected function setRelationType($relationType)
-    {
-        $this->relationType = $relationType;
-    }
 
     /**
      * @return mixed
@@ -605,35 +524,5 @@ class Model implements IteratorAggregate, ArrayAccess
     {
         $this->parameters = $parameters;
     }
-
-    public function getIterator()
-    {
-        return new ArrayIterator($this->attributes);
-    }
-
-
-    public function offsetExists($offset)
-    {
-        return isset($this->attributes[$offset]);
-    }
-
-
-    public function offsetGet($offset)
-    {
-        return $this->getPreProcess($offset, $this->attributes[$offset]);
-
-    }
-
-    public function offsetSet($offset, $value)
-    {
-        $this->attributes[$offset] = $value;
-    }
-
-
-    public function offsetUnset($offset)
-    {
-        unset($this->attributes[$offset]);
-    }
-
 
 }

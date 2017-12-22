@@ -55,7 +55,7 @@ class DB
 
     // 链操作方法列表
     protected $methods = [
-        'field' => '',
+        'field' => [],
         'where' => '',
         'order' => '',
         'limit' => '',
@@ -122,6 +122,7 @@ class DB
      * @var Model
      */
     protected $model;
+
 
 
     public function __construct(Model $model)
@@ -280,7 +281,6 @@ class DB
     {
         return $this->model;
     }
-
 
     /**
      * 给字符串添加反引号
@@ -544,10 +544,12 @@ class DB
             $fieldArr = explode(',', $field);
         }
 
-        $field = $this->escapeId($fieldArr);
+        $this->methods['field'] = array_merge($this->methods['field'], $fieldArr);
 
-        $this->methods['field'] .= ',' . $field;
-        $this->methods['field'] = trim($this->methods['field'], ',');
+        //$field = $this->escapeId($fieldArr);
+
+        // $this->methods['field'] .= ',' . $field;
+        // $this->methods['field'] = trim($this->methods['field'], ',');
 
 
         return $this;
@@ -587,7 +589,7 @@ class DB
     {
         if (empty($tableName)) {
             $tableName = $this->tableName;
-        } elseif ($tableName instanceof \Closure) {
+        } elseif ($tableName instanceof Closure) {
             return $this->tempTableName = ' (' . call_user_func($tableName, new Model($this->tableName)) . ') as tmp' . uniqid();
         }
 
@@ -630,7 +632,16 @@ class DB
      */
     public function toSql()
     {
-        $field = $this->methods['field'] ? $this->methods['field'] : '*';
+        $field = $this->methods['field'] ? $this->escapeId($this->methods['field']) : '*';
+
+//        array_reduce($this->methods['field'],function($result , $v){
+//            $field = $this->escapeId($fieldArr);
+//
+//        // $this->methods['field'] .= ',' . $field;
+//        // $this->methods['field'] = trim($this->methods['field'], ',');
+//        });
+
+
         $order = $this->methods["order"] != "" ? " ORDER BY {$this->methods["order"]} " : "";
         $group = $this->methods["group"] != "" ? " GROUP BY {$this->methods["group"]}" : "";
         $having = $this->methods["having"] != "" ? "{$this->methods["having"]}" : "";
@@ -758,9 +769,13 @@ class DB
      */
     public final function get($field = '*')
     {
-        $this->newModel([]);
         $models = [];
-        $this->statement = $this->select($field)->toSql();
+
+        if (!empty($this->methods['field']) && $field === '*') {
+            $this->statement = $this->toSql();
+        } else {
+            $this->statement = $this->select($field)->toSql();
+        }
 
         foreach ($this->query($this->statement, $this->parameters) as $k => $v) {
             $models[$k] = $this->newModel($v);
@@ -912,7 +927,7 @@ class DB
         $voluation = '';
         foreach ($data as $k => $v) {
             $voluation .= "`$k`=";
-            if ($v instanceof \Closure) {
+            if ($v instanceof Closure) {
                 $voluation .= $v() . ',';
             } else {
                 $voluation .= "?,";
@@ -932,6 +947,7 @@ class DB
      * @param bool $auto 是否自动添加表前缀
      * @param string $act
      * @return int 成功返回最后一次插入的id
+     * @throws Exception
      */
     public final function insert($data = [])
     {
@@ -951,6 +967,7 @@ class DB
      * @param string $tableName 数据库表名
      * @param bool $auto 是否自动添加表前缀
      * @return int 受影响行数
+     * @throws Exception
      */
     public function replace($data = [])
     {
@@ -960,9 +977,10 @@ class DB
 
     protected function insertData($data = [])
     {
+        $data = array_merge($this->model->getAutoFill(), $data);
         $data = $this->setDataPreProcessFill($data);
         return '(' . trim(array_reduce($data, function ($res, $item) {
-                if ($item instanceof \Closure) {
+                if ($item instanceof Closure) {
                     return $res . ',' . $item();
                 } else {
                     array_push($this->parameters, $item);
@@ -981,6 +999,7 @@ class DB
      */
     public function inserts($data = [])
     {
+        $this->parameters = [];
         if (isset($data[0]) && is_array($data[0])) {
             $fields = array_keys($data[0]);
             $data = trim(array_reduce($data, function ($res, $item) {
@@ -990,6 +1009,8 @@ class DB
             $fields = array_keys($data);
             $data = $this->insertData($data);
         }
+
+        $fields = array_merge(array_keys($this->model->getAutoFill()), $fields);
 
         $fields = $this->escapeId($fields);
         $act = func_get_arg(1) !== 'REPLACE' ? 'INSERT' : 'REPLACE';
@@ -1101,7 +1122,7 @@ class DB
         $voluation = '';
         foreach ($data as $k => $v) {
             $voluation .= "`$k`=";
-            if ($v instanceof \Closure) {
+            if ($v instanceof Closure) {
                 $voluation .= $v() . ',';
             } else {
                 $voluation .= "?,";
