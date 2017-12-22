@@ -148,16 +148,14 @@ trait HasRelationships
 
     }
 
+
     /**
      * 定义一个多对多的关系
-     *
-     * @param  string $related
-     * @param  string $table
-     * @param  string $foreignPivotKey
-     * @param  string $relatedPivotKey
-     * @param  string $parentKey
-     * @param  string $relatedKey
-     * @param  string $relation
+     * @param string $related 模型名
+     * @param string $table 中间表名
+     * @param string $relatedForeignKey 关联外键
+     * @param string $privotForeignKey 中间表名关联外键
+     * @return mixed
      */
     protected function belongsToMany($related, $table = null, $relatedForeignKey = null, $privotForeignKey = null)
     {
@@ -175,19 +173,12 @@ trait HasRelationships
         $relatedForeignKey = $relatedForeignKey ? $relatedForeignKey : $related->getTable() . '_id';
         $privotForeignKey = $privotForeignKey ? $privotForeignKey : $this->getTable() . '_id';
 
-        return
-            $related->where([
-                $related->getKeyName() . ' in' => function ($model) use ($table, $relatedForeignKey, $privotForeignKey) {
-                    return $model->table($table)
-                        ->select($relatedForeignKey)
-                        ->where([
-                            $privotForeignKey => $this->original[$this->getKeyName()]
-                        ])
-                        ->toSql();
-                }
-            ]);
 
-        // select $foreignPivotKey from $table where $relatedPivotKey= $this->original[$localKey]
+        return $this->newQuery($related)
+            ->join($table, [$related->getTable() . '.' . $related->getKeyName() => $table . '.' . $relatedForeignKey])
+            ->where([
+                $table . '.' . $privotForeignKey => $this->original[$this->getKeyName()]
+            ]);
 
     }
 
