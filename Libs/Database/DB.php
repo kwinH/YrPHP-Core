@@ -124,7 +124,6 @@ class DB
     protected $model;
 
 
-
     public function __construct(Model $model)
     {
         $this->model = $model;
@@ -590,7 +589,7 @@ class DB
         if (empty($tableName)) {
             $tableName = $this->tableName;
         } elseif ($tableName instanceof Closure) {
-            return $this->tempTableName = ' (' . call_user_func($tableName, new Model($this->tableName)) . ') as tmp' . uniqid();
+            return $this->tempTableName = ' (' . call_user_func($tableName, new static($this->model)) . ') as tmp' . uniqid();
         }
 
         if ($auto && !empty($this->tablePrefix)) {
@@ -856,15 +855,19 @@ class DB
      * @param string $table 表名称
      * @param string $cond 连接条件
      * @param string $type 连接类型
-     * @param bool $auto 是否自动添加表前缀
      * @return $this
      */
-    public final function join($table = '', $cond = [], $type = '', $auto = true)
+    public final function join($table = '', $cond = [], $type = '')
     {
-        $table = $auto ? $this->tablePrefix . $table : $table;
-        $table = preg_split('/\s+as\s+|\s+/', $table);
-        $tableAlias = isset($table[1]) ? $this->escapeId($this->tablePrefix . $table[1]) : '';
-        $table = $this->escapeId($table[0]);
+        if ($table instanceof Closure) {
+            $table = '(' . call_user_func($table, new static($this->model)) . ')';
+            $this->parameters = array_merge($this->parameters, $this->model->getParameters());
+            $tableAlias = 'tmp' . (count($this->methods['join']) + 1);
+        } else {
+            $table = preg_split('/\s+as\s+|\s+/', $table);
+            $tableAlias = isset($table[1]) ? $this->escapeId($this->tablePrefix . $table[1]) : '';
+            $table = $this->escapeId($table[0]);
+        }
 
         if ($type != '') {
             $type = strtoupper(trim($type));
@@ -883,10 +886,15 @@ class DB
                 $type .= ' ';
             }
         }
-        $this->methods['on'] = '';
-        $this->condition($cond, 'and', 'on');
 
-        $this->methods['join'][] = $type . 'JOIN ' . $table . ' ' . $tableAlias . $this->methods['on'];
+        if (count($cond) == 1 && array_keys($cond)[0] == ($field = reset($cond))) {
+            $this->methods['on'] = "using(`{$field}`)";
+        } else {
+            $this->methods['on'] = '';
+            $this->condition($cond, 'and', 'on');
+        }
+
+        $this->methods['join'][] = $type . 'JOIN ' . $table . ' ' . $tableAlias . ' ' . $this->methods['on'];
 
         return $this;
     }
