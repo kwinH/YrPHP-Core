@@ -32,86 +32,21 @@ trait HasRelationships
     protected function hasOne($related, $foreignKey = null, $localKey = null)
     {
         /**
-         * @var $instance Model
-         */
-        $instance = new $related;
-
-        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
-        $localKey = $localKey ? $localKey : $this->getKeyName();
-
-        $data = [$foreignKey => $this->original[$localKey]];
-
-        $instance->setRelationType('one')->setAutoFill($data);
-
-        return $this->newQuery($instance)
-            ->where($data);
-
-
-    }
-
-    /**
-     * 定义一对多关系
-     * @param $related
-     * @param null $foreignKey
-     * @param null $localKey
-     * @return DB|array
-     */
-    protected function hasMany($related, $foreignKey = null, $localKey = null)
-    {
-        /**
-         * @var $instance Model
-         */
-        $instance = new $related;
-
-        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
-        $localKey = $localKey ? $localKey : $this->getKeyName();
-
-        $data = [$foreignKey => $this->original[$localKey]];
-
-        $instance->setRelationType('many')->setAutoFill($data);
-
-        return $this->newQuery($instance)
-            ->where($data);
-    }
-
-
-    /**
-     * 定义一个远层一对多的关系
-     *
-     * @param  string $related 最终访问的模型的名称
-     * @param  string $through 中间模型的名称
-     * @param  string|null $firstKey 中间模型的外键
-     * @param  string|null $secondKey 最终访问的模型的外键
-     * @param  string|null $localKey 当前模型的主键
-     * @param  string|null $secondLocalKey 最终访问的模型的主键
-     * @throws \Exception
-     */
-    protected function hasManyThrough($related, $through, $firstKey = null, $secondKey = null, $localKey = null, $secondLocalKey = null)
-    {
-        /**
-         * @var $through Model
-         */
-        $through = new $through;
-
-        $firstKey = $firstKey ? $firstKey : $this->getTable() . '_id';
-        $secondKey = $secondKey ? $secondKey : $through->getTable() . '_id';
-        $localKey = $localKey ? $localKey : $this->getKeyName();
-        $secondLocalKey = $secondLocalKey ? $secondLocalKey : $through->getKeyName();
-
-        $range = $through->select($secondLocalKey)
-            ->where([$firstKey => $this->original[$localKey]])
-            ->get()
-            ->map(function ($val) use ($localKey) {
-                return $val->$localKey;
-            });
-
-        /**
          * @var $related Model
          */
         $related = new $related;
 
+        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
+        $localKey = $localKey ? $localKey : $this->getKeyName();
+
+        $data = [$foreignKey => $this->original[$localKey]];
+
+        $related->setRelationType('one')->setAutoFill($data);
+
         return $this->newQuery($related)
-            ->where([$secondKey . ' in' => $range]);
+            ->where($data);
+
+
     }
 
 
@@ -140,14 +75,81 @@ trait HasRelationships
         $id = $name . '_' . ($id ? $id : 'id');
         $localKey = $localKey ? $localKey : $this->getKeyName();
 
+        $data = [
+            $type => $this->getTable(),
+            $id => $this->original[$localKey]
+        ];
+
+        $related->setAutoFill($data);
+
         return $this->newQuery($related)
-            ->where([
-                $type => $this->getTable(),
-                $id => $this->original[$localKey]
-            ]);
+            ->where($data);
 
     }
 
+
+    /**
+     * 定义一对多关系
+     * @param $related
+     * @param null $foreignKey
+     * @param null $localKey
+     * @return DB|array
+     */
+    protected function hasMany($related, $foreignKey = null, $localKey = null)
+    {
+        /**
+         * @var $related Model
+         */
+        $related = new $related;
+
+        $foreignKey = $foreignKey ? $foreignKey : $this->getTable() . '_id';
+        $localKey = $localKey ? $localKey : $this->getKeyName();
+
+        $data = [$foreignKey => $this->original[$localKey]];
+
+        $related->setRelationType('many')->setAutoFill($data);
+
+        return $this->newQuery($related)
+            ->where($data);
+    }
+
+
+    /**
+     * 定义一个远层一对多的关系
+     *
+     * @param  string $related 最终访问的模型的名称
+     * @param  string $through 中间模型的名称
+     * @param  string|null $firstKey 中间模型的外键
+     * @param  string|null $secondKey 最终访问的模型的外键
+     * @param  string|null $localKey 当前模型的主键
+     * @param  string|null $secondLocalKey 最终访问的模型的主键
+     * @throws \Exception
+     */
+    protected function hasManyThrough($related, $through, $firstKey = null, $secondKey = null, $localKey = null, $secondLocalKey = null)
+    {
+        /**
+         * @var $through Model
+         */
+        $through = new $through;
+
+        $firstKey = $firstKey ? $firstKey : $this->getTable() . '_id';
+        $secondKey = $secondKey ? $secondKey : $through->getTable() . '_id';
+        $localKey = $localKey ? $localKey : $this->getKeyName();
+        $secondLocalKey = $secondLocalKey ? $secondLocalKey : $through->getKeyName();
+
+        /**
+         * @var $related Model
+         */
+        $related = new $related;
+
+        return $this->newQuery($related)
+            ->join(function ($db) use ($through, $secondLocalKey, $secondKey, $firstKey, $localKey) {
+                return $db->table($through->getTable())
+                    ->select($secondLocalKey . ' as ' . $secondKey)
+                    ->where([$firstKey => $this->original[$localKey]])
+                    ->toSql();
+            }, [$secondKey => $secondKey]);
+    }
 
     /**
      * 定义一个多对多的关系

@@ -1657,11 +1657,10 @@ DB::::table('user')->limit(1)->get();
 >例：
 >['id'=>1,'or id'=>2,'age >'=>15,'or id in'=>[1,2,3,4,5]]
 >
->$value 值 array|string|int|null|‘not null’
+>$value 值 array|Closure|string|int|null
 >field可以用空格分开，与连接符、字段名、运算符组成
 >运算符 =|!=|<>|>|<|like|is|between|not between|in|not in
 >连接符 or|and 与前一个条件的连接符 默认调用`$logical`
->
 
 ```php
 
@@ -1683,6 +1682,15 @@ DB::::table('user')->where("id='1596'")->where(array('id !='=>'1113','or fullnam
 DB::::table('user')->where(array('id in'=>array(1,2,3,4,5,6,7,8,9,10)))->get();
 //生成的SQL语句
 //SELECT  *  FROM  `prefix_user` where ( `id` in(1,2,3,4,5,6,7,8,9,10))
+
+
+DB::::table('user')->where(['id in'=>function($model){
+  return $model->table('test')->select('id')
+    ->where(['name !='=>''])
+    ->toSql();
+}])->get();
+//生成的SQL语句
+//SELECT  *  FROM  `prefix_user` where (id in (select `id` FROM `prefix_test` where (`name`!='')))
 ```
 >where 可以用连贯查询 一组where会用`()`包含
 
@@ -1710,11 +1718,10 @@ DB::::table('user')->group('id')->having(array('id >'=>'2000'))->get('users');
 ```
 
 **JOIN**
->**join($table, $cond, $type = '', $auto = true)
-> @param $table 表名
-> @param $cond  连接条件 同where
-> @param string $type 连接方式
-> @param bool $auto 是否自动添加表前缀**
+>**join($table, $cond, $type = '', $auto = true)**
+> **@param $table 表名**
+> **@param $cond  连接条件 同where**
+>**@param string $type 连接方式**
 
 
 ```php
@@ -2091,6 +2098,9 @@ $user = User::closePreProcess()->insert(['first_name'=>'Sally'])；
 
 ### 一对一
 一对一关联是最基本的关联关系。例如，一个 User 模型可能关联一个 Identity 模型。为了定义这个关联，我们要在 User 模型中写一个 identity 方法，在 identity 方法内部调用 hasOne 方法并返回其结果：
+
+#### 定义
+
 ```php
 <?php
 namespace App\Models;
@@ -2111,27 +2121,134 @@ class User extends Model
 }
 ```
 
+#### 关联查找
+
 hasOne 方法的第一个参数是关联模型的类名。关联关系定义好后，我们就可以动态属性获得相关的记录。您可以像在访问模型中定义的属性一样，使用动态属性：
 
 ```PHP
 $identity = User::find(1)->identity;
 ```
 
-
 默认会基于模型名决定外键名称。在当前场景中，会假设 Identity 模型有一个 user_id 外键，如果外键名不是这个，可以通过给 hasOne 方法传递第二个参数覆盖默认使用的外键名：
 
-return $this->hasOne('App\Phone', 'foreign_key');
+```php
+return $this->hasOne('\App\Models\Identity', 'foreign_key');
+```
+
+
 此外，Model会假定外键值是与父级 id（或自定义 $primaryKey）列的值相匹配的。 换句话说，会将在 Phone 记录的 user_id 列中查找与用户表的 id 列相匹配的值。 如果您希望该关联使用 id以外的自定义键名，则可以给 hasOne 方法传递第三个参数：
 
 ```PHP
-return $this->hasOne('App\Phone', 'foreign_key', 'local_key');
+return $this->hasOne('\App\Models\Identity', 'foreign_key', 'local_key');
 ```
+
+
+
+####  关联新增
+
+```PHP
+User::find(1)->identity()->insert([
+  'id_card' => '330328198905084836'
+]);
+```
+
+系统会自动把当前模型的主键传入Identity模型表的外键中
+
+### 多态一对一
+
+多态一对一相比多态一对多关联的区别是动态的一对一关联，举个例子说有一个个人和团队表，而无论个人还是团队都有一个头像需要保存但都会对应同一个头像表
+```
+member
+	id - integer
+    name - string
+    
+team
+	id - integer
+    name - string
+    
+avatar
+	id - integer
+    avatar - string
+    imageable_id - integer
+    imageable_type - string   
+```
+
+#### 定义
+
+会员模型：
+
+```php
+<?php
+
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class Member extends Model
+{
+    /**
+     * 获取用户的头像
+     */
+    public function avatar()
+    {
+        return $this->morphOne('App\Models\Avatar', 'imageable');
+    }
+}
+```
+团队模型：
+
+```php
+<?php
+
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class Team extends Model
+{
+    /**
+     * 获取团队的头像
+     */
+    public function avatar()
+    {
+        return $this->morphOne('App\Models\Avatar', 'imageable');
+    }
+}
+```
+
+morphOne方法的参数如下：
+**morphOne('关联模型名','多态字段信息','多态类型','多态外键','多态外键对应关联键名');**
+**关联模型名（必须）：**关联的模型名称。
+**多态字段信息（可选）：**多态字段使用 多态前缀\_type和多态前缀\_id，默认为当前的关联方法名作为字段前缀。
+**多态类型字段（可选）：** 默认`type`,与多态字段组合成多态类型字段，多态字段信息\_多态类型
+**多态外键字段（可选）：** 默认`id`,与多态字段组合成多态外键字段，多态字段信息\_多态外键
+**多态外键对应关联键名：** 与多态外键字段关联的主键字段名
+
+#### 关联查找
+
+```PHP
+//返回一个Avatar模型
+$avatar = Member::find(1)->avatar;
+```
+
+#### 关联新增
+
+```php
+Member::find(1)->avatar()->insert([
+  'img' => 'upload/image/1499757432849533.jpg'
+]);
+```
+
+> 系统会把当前模型的`表名`填充到Avatar模型的`多态类型字段`上，把当前模型的`主键`填充到Avatar模型的`多态外键字段`上
+
 
 
 
 ### 一对多
 
 「一对多」关联用于定义单个模型拥有任意数量的其它关联模型。例如，一个人可能会有多张银行卡帐号。
+
+#### 定义
 
 ```php
 <?php
@@ -2147,12 +2264,14 @@ class User extends Model
      */
     public function bankCard()
     {
-        return $this->hasOne('\App\Models\BankCard');
+        return $this->hasMany('\App\Models\BankCard');
     }
 }
 ```
 
 记住，Model 会自动确定 `BankCard` 模型上正确的外键字段。按照约定，Model 使用父级表名、加上 `_id` 后缀名作为外键字段。对应到上面的场景，就是 Model 假定 `Comment` 模型对应到 `User` 模型上的那个外键字段是 `user_id`。
+
+#### 关联查找
 
 关联关系定义好后，我们就可以通过访问 `bankCard` 属性获得评论集合。记住，因为 Model 提供了「动态属性」，所以我们可以像在访问模型中定义的属性一样，访问关联方法：
 
@@ -2177,6 +2296,92 @@ return $this->hasMany('\App\Models\BankCard', 'foreign_key');
 
 return $this->hasMany('\App\Models\BankCard', 'foreign_key', 'local_key');
 ```
+
+
+
+#### 关联新增
+
+```php
+User::find(1)->bankCard()->insert([
+  'card_id' => '6225766750993868'
+]);
+```
+
+> 系统会自动把当前模型的主键传入BankCard模型表的外键中
+
+
+
+### 远层一对多
+
+「远层一对多」关联提供了方便、简短的方式通过中间的关联来获得远层的关联。例如，一个 Country 模型可以通过中间的 User 模型获得多个 Post 模型。在这个例子中，您可以轻易地收集给定国家的所有博客文章。让我们来看看定义这种关联所需的数据表：
+```
+countries
+    id - integer
+    name - string
+
+users
+    id - integer
+    country_id - integer
+    name - string
+
+posts
+    id - integer
+    user_id - integer
+    title - string
+```
+
+虽然 posts 表中不包含 country_id 字段，但 hasManyThrough 关联能让我们通过 $country->posts 访问到一个国家下所有的用户文章。为了完成这个查询，Model 会先检查中间表 users 的 country_id 字段，找到所有匹配的用户 ID 后，使用这些 ID，在 posts 表中完成查找。
+
+#### 定义
+
+现在，我们已经知道了定义这种关联所需的数据表结构，接下来，让我们在 Country 模型中定义它：
+```php
+<?php
+
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class Country extends Model
+{
+    /**
+     * 获得某个国家下所有的用户文章。
+     */
+    public function posts()
+    {
+        return $this->hasManyThrough('App\Post', 'App\User');
+    }
+}
+```
+hasManyThrough 方法的第一个参数是我们最终希望访问的模型名称，而第二个参数是中间模型的名称。
+
+当执行关联查询时，通常会使用 Eloquent 约定的外键名。如果您想要自定义关联的键，可以通过给 hasManyThrough 方法传递第三个和第四个参数实现，第三个参数表示中间模型的外键名，第四个参数表示最终模型的外键名。第五个参数表示本地键名，而第六个参数表示中间模型的本地键名：
+
+```php
+
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class Country extends Model
+{
+    public function posts()
+    {
+        return $this->hasManyThrough(
+            'App\Post',
+            'App\User',
+            'country_id', // 用户表外键...
+            'user_id', // 文章表外键...
+            'id', // 国家表本地键...
+            'id' // 用户表本地键...
+        );
+    }
+}
+```
+
+
+
+### 多对多
 
 ------------
 
@@ -2484,11 +2689,11 @@ function parseNaming($name = '', $type = 0){}
 ------------
 #创造自己的类库
 将你自己的 .php 文件放入`APP_PATH`/Libs
-文件的命名规则为`类名.php`,类名不能与系统类库（`LIBS_PATH`）下的类重名
+文件的命名规则为`类名.php`采用大驼峰命名法命名方
 
 ####例：
 
->在`APP_PATH`/Libs文件夹中新建一个名问MyPage.class.php的类文件
+>在`APP_PATH`/Libs文件夹中新建一个名问MyPage.php的类文件
 
 ```php
     <?php
