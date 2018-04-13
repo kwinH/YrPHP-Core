@@ -87,6 +87,11 @@ class Model implements IteratorAggregate, ArrayAccess
     protected $attributes = [];
 
     /**
+     * 要修改的数据数组
+     * @var array
+     */
+    protected $updateData = [];
+    /**
      * 模型的加载关系
      * @var array
      */
@@ -237,16 +242,14 @@ class Model implements IteratorAggregate, ArrayAccess
             $this->original = $this->attributes;
             return $this->attributes[$this->primaryKey];
         } else {
-            $data = array_merge(
-                array_intersect_key($this->attributes, $this->original),
-                array_diff_key($this->attributes, $this->original)
-            );
+
             if (isset($this->original[$this->primaryKey])) {
                 $where[$this->primaryKey] = $this->original[$this->primaryKey];
             } else {
                 $where = $this->original;
             }
-            return $this->newQuery($this)->update($data, $where);
+
+            return $this->newQuery($this)->update($this->updateData, $where);
         }
     }
 
@@ -389,7 +392,7 @@ class Model implements IteratorAggregate, ArrayAccess
         } else {
             $this->attributes[$key] = $value;
         }
-
+        $this->updateData[$key] = $this->attributes[$key];
         return $this;
     }
 
