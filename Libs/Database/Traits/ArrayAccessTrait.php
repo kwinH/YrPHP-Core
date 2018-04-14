@@ -38,6 +38,7 @@ trait ArrayAccessTrait
     public function offsetSet($offset, $value)
     {
         $this->attributes[$offset] = $value;
+        $this->updateData[$offset] = $value;
     }
 
 
@@ -47,6 +48,7 @@ trait ArrayAccessTrait
     public function offsetUnset($offset)
     {
         unset($this->attributes[$offset]);
+        unset($this->updateData[$offset]);
     }
 
 }
