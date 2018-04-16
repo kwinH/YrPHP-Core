@@ -194,23 +194,24 @@ class Route
      * @param string $uri
      * @param string $controller 控制器类名
      * @param array $names 设置别名
+     * @throws \ReflectionException
      */
     public function controller($uri = '', $controller = '', $names = array())
     {
         $uri = '/' . $uri;
-        $action = $this->namespacePrefix;
+        $class = $this->namespacePrefix;
         if (isset($this->groupStack['namespace'])) {
-            $action .= $this->groupStack['namespace'];
+            $class .= $this->groupStack['namespace'];
         }
-        $action .= $controller;
+        $class .= $controller;
 
-        $reflection = new ReflectionClass($action);
+        $reflection = new ReflectionClass($class);
 
         $methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
 
         foreach ($methods as $v) {
 
-            if ($v->class !== $action) {
+            if ($v->class !== $class) {
                 break;
             }
 
