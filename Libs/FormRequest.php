@@ -5,6 +5,7 @@
  * QQ:284843370
  * Email:kwinwong@hotmail.com
  */
+
 namespace YrPHP;
 
 use Closure;
@@ -99,8 +100,6 @@ class FormRequest
         }
 
         if (!empty($error)) {
-            Session::flash('_old_input', $array);
-            Session::flash('errors', $error);
             $this->response($error);
             return false;
         }
@@ -111,8 +110,7 @@ class FormRequest
 
     public function response(array $errors)
     {
-        \response::errorBackTo($errors);
-
+        \Response::errorBackTo($errors);
     }
 
     public function __call($method, $args)

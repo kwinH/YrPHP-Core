@@ -109,9 +109,8 @@ class Response
 
     public function errorBackTo($errors, $url = null)
     {
-
         Session::flash('_old_input', \Request::all());
-        Session::flash('errors', $errors);
+        Session::flash('errors', new  ErrorsMessage((array)$errors));
         if (\Request::isAjax()) {
             exit($this->json(['error' => $errors]));
         }

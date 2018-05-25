@@ -126,6 +126,43 @@ class Route
     protected $uriAutoAddressing = false;
 
 
+    /**
+     * 在实例化控制器之前全局中间件
+     *
+     * @var array
+     */
+    protected $beforeMiddleware = [];
+
+
+    /**
+     * 在实例化控制器实例化之后，未调用方法之前全局中间件
+     *
+     * @var array
+     */
+    protected $middleMiddleware = [];
+
+    /**
+     * 调用方法之后全局中间件
+     *
+     * @var array
+     */
+    protected $afterMiddleware = [];
+
+
+    /**
+     * 所有的中间件
+     *
+     * @var array
+     */
+    protected $routeMiddleware = [];
+
+    /**
+     * 所有的中间件组
+     * @var array
+     */
+    protected $middlewareGroups = [];
+
+
     public function __construct()
     {
         $this->setNamespacePrefix(APP . '\\' . Config::get('ctrBaseNamespace'));
@@ -781,6 +818,55 @@ class Route
     public function getActName()
     {
         return $this->actName;
+    }
+
+    public function beforeMiddleware($class)
+    {
+        $this->beforeMiddleware[] = $class;
+
+        return $this;
+    }
+
+    public function middleMiddleware($class)
+    {
+        $this->middleMiddleware[] = $class;
+
+        return $this;
+    }
+
+    public function afterMiddleware($class)
+    {
+        $this->afterMiddleware[] = $class;
+
+        return $this;
+    }
+
+    /**
+     * Register a short-hand name for a middleware.
+     *
+     * @param  string $name
+     * @param  string $class
+     * @return $this
+     */
+    public function aliasMiddleware($name, $class)
+    {
+        $this->routeMiddleware[$name] = $class;
+
+        return $this;
+    }
+
+    /**
+     * Register a group of middleware.
+     *
+     * @param  string $name
+     * @param  array $middleware
+     * @return $this
+     */
+    public function middlewareGroup($name, array $middleware)
+    {
+        $this->middlewareGroups[$name] = $middleware;
+
+        return $this;
     }
 
 }
