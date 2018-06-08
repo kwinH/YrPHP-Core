@@ -8,6 +8,9 @@
  */
 
 namespace YrPHP;
+
+use Route;
+
 class View
 {
     /**
@@ -150,15 +153,15 @@ class View
     public function setConfig($config = [])
     {
         if (empty($config)) {
-            $this->templateDir = Config::get('setTemplateDir');       //定义模板文件存放的目录
-            $this->compileDir = Config::get('setCompileDir');      //定义通过模板引擎组合后文件存放目录
+            $this->templateDir = rtrim(Config::get('setTemplateDir'), '/') . '/';       //定义模板文件存放的目录
+            $this->compileDir = rtrim(Config::get('setCompileDir'), '/') . '/';        //定义通过模板引擎组合后文件存放目录
             $this->caching = Config::get('caching');     //缓存开关 1开启，0为关闭
             $this->cacheLifeTime = Config::get('cacheLifetime');  //设置缓存的时间 0代表永久缓存
-            $this->cacheDir = Config::get('setCacheDir');      //设置缓存的目录
+            $this->cacheDir = rtrim(Config::get('setCacheDir'), '/') . '/';      //设置缓存的目录
             $this->leftDelimiter = Config::get('leftDelimiter');          //在模板中嵌入动态数据变量的左定界符号
             $this->rightDelimiter = Config::get('rightDelimiter'); //模板文件中使用的“右”分隔符号
 
-            $this->ctlFile = Config::get('classPath');//控制器文件
+            $this->ctlFile = Route::getCurrentRoute()->getCtlPath();//控制器文件
 
             $this->cacheSubDir = Config::get('cacheSubDir', \Route::getCtlName()); //定义生成的缓存文件的子目录默认为控制器名
             $this->cacheFileName = Config::get('cacheFileName', \Route::getActName());//定义生成的缓存文件名 默认为方法名

@@ -22,7 +22,7 @@ class Redis implements ICache
             return static::$object;
         } else {
             static::$object = new \Redis;
-            $config = C('redis');
+            $config = config('redis');
             if (is_string($config)) {
                 $conf = explode(':', $config);
                 static::$object->connect($conf[0], $conf[1]);
@@ -57,7 +57,7 @@ class Redis implements ICache
      */
     public function set($key = '', $val = '', $timeout = null)
     {
-        $timeout = is_null($timeout) ? C('dbCacheTime') : $timeout;
+        $timeout = is_null($timeout) ? config('dbCacheTime') : $timeout;
         return static::getInstance()->set($key, mySerialize($val), $timeout);
     }
 

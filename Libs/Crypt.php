@@ -13,7 +13,7 @@ class Crypt
 {
     public function __construct()
     {
-        $mode = C('cryptMode');
+        $mode = config('cryptMode');
         if ($mode == 'des3') {
             $this->class = loadClass('YrPHP\Crypt\DES3');
         } else {

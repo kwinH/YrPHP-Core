@@ -19,7 +19,7 @@ class UrlGenerator
 
     public function __construct()
     {
-        $this->cacheFile = C('setCacheDir') . 'routes.php';
+        $this->cacheFile = config('setCacheDir') . 'routes.php';
     }
 
     /**
@@ -27,9 +27,9 @@ class UrlGenerator
      */
     public function cache()
     {
-        require APP_PATH . 'Config/routes.php';
-        $route = Route::getRoutes();
-        if (file_put_contents($this->cacheFile, '<?php' . PHP_EOL . 'return ' . var_export($route, true) . ';')) {
+
+        $route = Route::requireRoueFiiles();
+        if (file_put_contents($this->cacheFile, serialize($route))) {
             echo 'OK';
         } else {
             echo 'ERROR';

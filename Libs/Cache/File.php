@@ -18,9 +18,9 @@ class File implements ICache
 
     public function __construct()
     {
-        $this->dbCacheTime = C('dbCacheTime');
-        $this->dbCachePath = C('dbCachePath');
-        $this->dbCacheExt = C('dbCacheExt');
+        $this->dbCacheTime = config('dbCacheTime');
+        $this->dbCachePath = config('dbCachePath');
+        $this->dbCacheExt = config('dbCacheExt');
     }
 
     /**

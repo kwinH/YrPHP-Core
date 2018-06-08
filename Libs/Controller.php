@@ -6,6 +6,7 @@
  * Email:kwinwong@hotmail.com
  * GitHub:https://github.com/kwinH/YrPHP
  */
+
 namespace YrPHP;
 
 
@@ -63,7 +64,7 @@ abstract class Controller
                 $middleware[] = $k;
                 continue;
             }
-            $actName = C('actName');
+            $actName = config('actName');
             if (
                 (isset($v['only']) && in_array($actName, $v['only']))
                 || (isset($v['except']) && !in_array($actName, $v['except']))
@@ -96,7 +97,9 @@ abstract class Controller
 
     public function __call($method, $args)
     {
-        error404();
+        sendHttpStatus(404);
+        require config('errors_template.404');
+        exit;
     }
 
     public function __get($name)

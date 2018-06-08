@@ -26,7 +26,7 @@ class Request
 
 
     /**
-     * 支持连贯查询
+     * 支持连贯查询 排除不需要的数据
      * @param $keys
      * @return $this
      */
@@ -38,6 +38,11 @@ class Request
         return $this;
     }
 
+    /**
+     * 只取需要的数据
+     * @param $keys
+     * @return $this
+     */
     public function only($keys)
     {
         $keys = is_array($keys) ? $keys : func_get_args();
@@ -47,6 +52,12 @@ class Request
     }
 
 
+    /**
+     * 获取头http客户端请求信息
+     * @param null $key
+     * @param null $default
+     * @return array|false|mixed|null
+     */
     public function header($key = null, $default = null)
     {
         $headers = [];
@@ -72,7 +83,12 @@ class Request
 
     }
 
-
+    /**
+     * 获取GET请求数据
+     * @param null $key
+     * @param null $default
+     * @return array|mixed|null
+     */
     public function get($key = null, $default = null)
     {
         $data = static::$getData;
@@ -85,6 +101,12 @@ class Request
 
     }
 
+    /**
+     * 获取POST请求数据
+     * @param null $key
+     * @param null $default
+     * @return array|mixed|null
+     */
     public function post($key = null, $default = null)
     {
         $data = static::$postData;
@@ -97,6 +119,11 @@ class Request
 
     }
 
+    /**
+     * 获取GET和POST的数据
+     * @param null $data
+     * @return array|null
+     */
     public function all($data = null)
     {
         $data = $data ?: array_merge(static::$getData, static::$postData);
@@ -111,9 +138,15 @@ class Request
         return $data;
     }
 
-    public function replace($data, $method = 'get')
+
+    /**
+     * @param array $data
+     * @param string $method
+     * @return array|bool
+     */
+    public function replace(array $data, $method = 'get')
     {
-        switch ($method) {
+        switch (strtolower($method)) {
             case 'post':
                 static::$postData = $data;
                 break;
@@ -127,25 +160,32 @@ class Request
         return $data;
     }
 
+    /**
+     * @param array $data
+     * @param string $method
+     */
     public function merge(array $data, $method = 'get')
     {
-        switch ($method) {
+        switch (strtolower($method)) {
             case 'post':
                 static::$postData = array_merge(static::$postData, $data);
                 break;
             case 'get':
                 static::$getData = array_merge(static::$getData, $data);
                 break;
-            default:
-                return false;
         }
     }
 
+    /**
+     * @param array $keys
+     * @param string $method
+     * @return array|bool
+     */
     public function pop(array $keys, $method = 'get')
     {
         $keys = array_flip($keys);
 
-        switch ($method) {
+        switch (strtolower($method)) {
             case 'post':
                 $data = static::$postData;
                 break;
@@ -163,7 +203,7 @@ class Request
 
     public function filter($data = [])
     {
-        $filters = C('defaultFilter');
+        $filters = config('defaultFilter');
         if (is_string($filters)) {
             $filters = explode('|', $filters);
         }
@@ -181,8 +221,10 @@ class Request
         return $data;
     }
 
-
-
+    /**
+     * 获取当前URI
+     * @return bool|string
+     */
     public function getPath()
     {
         return \Route::getCurrentUri();
@@ -198,7 +240,6 @@ class Request
 
 
     }
-
 
 
     /**
@@ -221,9 +262,13 @@ class Request
     }
 
 
+    /**
+     *
+     * @return mixed
+     */
     public function method()
     {
-        return $_SERVER['REQUEST_METHOD'];
+        return \Route::getmethod();
     }
 
     /**
@@ -252,24 +297,57 @@ class Request
         return false;
     }
 
+    /**
+     * 端口号
+     * @return mixed
+     */
     public function port()
     {
         return $_SERVER['SERVER_PORT'];
     }
 
+    /**
+     * 主机地址
+     * @return mixed
+     */
     public function host()
     {
         return $_SERVER['HTTP_HOST'];
     }
 
+    /**
+     * 当前的完整地址
+     * @return string
+     */
     function currentUrl()
     {
         return ($this->isHttps() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER["REQUEST_URI"];
     }
 
+    /**
+     * 来源地址
+     * @return mixed
+     */
     public function referer()
     {
         return isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $_SERVER['HTTP_HOST'];
+    }
+
+
+    /**
+     * 返回uri 数组
+     * @param null $n
+     * @param null $no_result
+     * @return array|mixed|null|string
+     */
+    public function part($n = null, $no_result = null)
+    {
+        $path = $this->getPath();
+
+        $uri = explode('/', $path);
+        unset($uri[0]);
+        if (is_int($n)) return isset($uri[$n]) ? $uri[$n] : $no_result;
+        return $uri;
     }
 
 }

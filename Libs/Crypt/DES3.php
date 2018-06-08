@@ -7,8 +7,8 @@ class DES3 implements ICrypt
 
     function __construct()
     {
-        $this->key = C('cryptKey');
-        $this->iv = C('cryptIv');
+        $this->key = config('cryptKey');
+        $this->iv = config('cryptIv');
     }
 
     function encrypt($input)

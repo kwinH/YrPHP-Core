@@ -820,12 +820,12 @@ return [
 
 无论何种配置文件，定义了配置文件之后，都统一使用系统提供的C方法（可以借助Config单词来帮助记忆）来读取已有的配置。
 
-获取已经设置的参数值：**C('参数名称')**
+获取已经设置的参数值：**config('参数名称')**
 
-> 除config.php文件外，其他文件可以用C('fileName.param')获取
+> 除config.php文件外，其他文件可以用config('fileName.param')获取
 
 ```php
-$charset = C('charset');//获得配置中的编码格式 =>YrPHP\Config::get('charset');两者等同
+$charset = config('charset');//获得配置中的编码格式 =>YrPHP\Config::get('charset');两者等同
 ```
 
 如果`charset`尚未存在设置，则返回NULL。
@@ -833,13 +833,13 @@ $charset = C('charset');//获得配置中的编码格式 =>YrPHP\Config::get('ch
 > 支持设置默认值例如：
 
 ```php
-C('my_config','default_config');
+config('my_config','default_config');
 ```
 
 >如果不传参数 则返回所有配置信息
 
 ```php
-$config = C();//return array;
+$config = config();//return array;
 ```
 
 ##动态配置
@@ -1120,7 +1120,7 @@ class Index extends Controller
 
 ####将函数赋值
 ```php
-{assign $config = C()}
+{assign $config = config()}
 ```
 
 
@@ -1155,7 +1155,7 @@ class Index extends Controller
 ##循环
 ####foreach
 ```php
-{assign $config = C()}
+{assign $config = config()}
 
 {foreach (config as k=>$v)}
 
@@ -2349,7 +2349,7 @@ class Country extends Model
      */
     public function posts()
     {
-        return $this->hasManyThrough('App\Post', 'App\User');
+        return $this->hasManyThrough('\App\Models\Post', 'App\User');
     }
 }
 ```
@@ -2368,8 +2368,8 @@ class Country extends Model
     public function posts()
     {
         return $this->hasManyThrough(
-            'App\Post',
-            'App\User',
+            '\App\Models\Post',
+            '\App\Models\User',
             'country_id', // 用户表外键...
             'user_id', // 文章表外键...
             'id', // 国家表本地键...
@@ -2382,7 +2382,35 @@ class Country extends Model
 
 
 ### 多对多
+>例如，我们的用户和角色就是一种多对多的关系，我们在User模型定义如下：
+>belongsToMany('关联模型名','中间表名','关联外键','中间表名关联外键');
 
+```
+<?php
+namespace App\Models;
+
+use YrPHP\Database\Model;
+
+class User extends Model 
+{
+    public function roles()
+    {
+        return $this->belongsToMany('\App\Models\Role');
+    }
+}
+```
+关联关系定义好后，我们就可以通过 roles 动态属性获得用户的角色了：
+```
+$user = App\User::find(1);
+
+foreach ($user->roles as $role) {
+    //
+}
+```
+当然，如同所有其它的关联类型，您可以调用 roles 方法，利用链式调用对查询语句添加约束条件：
+```
+$roles = App\User::find(1)->roles()->orderBy('name')->get();
+```
 ------------
 
 # 表单验证
@@ -2482,7 +2510,7 @@ function &getInstance(){}
 * @param mixed $default 默认值
 * @return mixed
 */
-   function C($name = null,  $default = null){}
+   function config($name = null,  $default = null){}
 
 /**********************************************************/
 /**
@@ -2587,13 +2615,7 @@ cookie('id',null);
    function myUnSerialize($txt = ''){}
 
  /**********************************************************/
-/**
- *404跳转
-* @param string $msg 提示字符串
-* @param string $url 跳转URL
-* @param int $time 指定时间跳转
-    */
-    function error404($msg = '', $url = '', $time = 3){}
+
 
 /**
  * 下载一个远程文件到客户端

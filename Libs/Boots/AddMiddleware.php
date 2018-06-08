@@ -6,12 +6,13 @@
  * Email:kwinwong@hotmail.com
  */
 
-namespace App\Boots;
+namespace YrPHP\Boots;
 
-use YrPHP\Route;
+use YrPHP\Routing\Route;
 
 class AddMiddleware
 {
+
     /**
      * 在实例化控制器之前全局中间件
      *
@@ -48,28 +49,37 @@ class AddMiddleware
      */
     protected $middlewareGroups = [];
 
+    /**
+     * @var Route
+     */
+    protected $router;
+
 
     public function __construct(Route $router)
     {
+        $this->router = $router;
+    }
+
+    public function init()
+    {
         foreach ($this->beforeMiddleware as $middleware) {
-            $router->beforeMiddleware($middleware);
+            $this->router->beforeMiddleware($middleware);
         }
 
         foreach ($this->middleMiddleware as $middleware) {
-            $router->middleMiddleware($middleware);
+            $this->router->middleMiddleware($middleware);
         }
 
         foreach ($this->afterMiddleware as $middleware) {
-            $router->afterMiddleware($middleware);
+            $this->router->afterMiddleware($middleware);
         }
 
         foreach ($this->middlewareGroups as $key => $middleware) {
-            $router->middlewareGroup($key, $middleware);
+            $this->router->middlewareGroup($key, $middleware);
         }
 
         foreach ($this->routeMiddleware as $key => $middleware) {
-            $router->aliasMiddleware($key, $middleware);
+            $this->router->aliasMiddleware($key, $middleware);
         }
     }
-
 }

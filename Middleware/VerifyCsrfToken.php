@@ -26,10 +26,10 @@ class VerifyCsrfToken implements IMiddleware
         if ($request->method() !== 'GET' && !$this->shouldPassThrough($request) && $token != $csrfToken) {
 
             if ($request->isAjax()) {
-               return Response::json(['error' => 'CSRF验证不通过'], 500);
+                return Response::json(['error' => 'CSRF验证不通过'], 500);
             } else {
                 sendHttpStatus(500);
-                require BASE_PATH . 'resource/tpl/csrf_error.php';
+                require config('errors_template.csrf_error');
             }
 
             return false;

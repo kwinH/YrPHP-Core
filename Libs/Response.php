@@ -93,6 +93,18 @@ class Response
         return $this;
     }
 
+    /**
+     * @param $fileName
+     * @param string $tplVars
+     * @param string $cacheId
+     * @return string
+     * @throws \Exception
+     */
+    public function view($fileName, $tplVars = '', $cacheId = '')
+    {
+        return \View::display($fileName, $tplVars, $cacheId);
+    }
+
     public function json(array $data = [], $code = 200)
     {
         $this->status($code)->sendHeader(['Content-Type' => 'application/json;charset=UTF-8']);

@@ -6,12 +6,19 @@
  * Email:kwinwong@hotmail.com
  * GitHub:https://github.com/kwinH/YrPHP
  */
+
 namespace YrPHP\Boots;
 
 use YrPHP\Event;
 
 class EventBoot
 {
+
+    /**
+     * @var Event
+     */
+    protected $events;
+
     /**
      * The event listener mappings for the application.
      *
@@ -25,21 +32,21 @@ class EventBoot
 
     ];
 
-    public function __construct()
+    public function __construct(Event $events)
     {
-
+        $this->events = $events;
     }
 
-    public function init(Event $events)
+    public function init()
     {
         foreach ($this->listen as $event => $listeners) {
             foreach ($listeners as $listener) {
-                $events->listen($event, $listener);
+                $this->events->listen($event, $listener);
             }
         }
 
         foreach ($this->subscribe as $subscriber) {
-            $events->subscribe($subscriber);
+            $this->events->subscribe($subscriber);
         }
     }
 }

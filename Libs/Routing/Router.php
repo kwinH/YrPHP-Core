@@ -7,15 +7,19 @@
  * GitHub: https://github.com/kwinH/YrPHP
  */
 
-namespace YrPHP;
+namespace YrPHP\Routing;
 
 use App;
 use Closure;
+use Exception;
 use ReflectionClass;
 use ReflectionMethod;
 use Pipeline;
+use YrPHP\Config;
+use YrPHP\Session;
 
-class Route
+
+class Router
 {
     /**
      * 在所有路由上应用的正则匹配
@@ -54,9 +58,9 @@ class Route
 
     /**
      * 当前路由
-     * @var array
+     * @var Route
      */
-    protected $currentRoute = [];
+    protected $currentRoute;
 
     /**
      * 当前URI
@@ -89,12 +93,6 @@ class Route
      * @var array
      */
     protected $groupStack = [];
-
-    /**
-     * 控制器基础命名空间
-     * @var string
-     */
-    protected $namespacePrefix = '';
 
     /**
      * 资源控制器的默认操作
@@ -162,23 +160,13 @@ class Route
      */
     protected $middlewareGroups = [];
 
+    protected static $routeFiles = [];
 
     public function __construct()
     {
-        $this->setNamespacePrefix(APP . '\\' . Config::get('ctrBaseNamespace'));
         $this->currentMethod = $this->getmethod();
         $this->getCurrentUri();
         $this->uriAutoAddressing = Config::get('uriAutoAddressing', false);
-    }
-
-
-    /**
-     * 设置控制器基础命名空间
-     * @param string $namespacePrefix
-     */
-    public function setNamespacePrefix($namespacePrefix)
-    {
-        $this->namespacePrefix = rtrim($namespacePrefix, '\\') . '\\';
     }
 
 
@@ -236,19 +224,17 @@ class Route
     public function controller($uri = '', $controller = '', $names = array())
     {
         $uri = '/' . $uri;
-        $class = $this->namespacePrefix;
-        if (isset($this->groupStack['namespace'])) {
-            $class .= $this->groupStack['namespace'];
-        }
-        $class .= $controller;
+        $namespace = $this->groupStack['namespace'] ?? '';
 
-        $reflection = new ReflectionClass($class);
+        $controller = ($namespace ? rtrim($namespace, '\\') : '') . '\\' . $controller;
+
+        $reflection = new ReflectionClass($controller);
 
         $methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
 
         foreach ($methods as $v) {
 
-            if ($v->class !== $class) {
+            if ($v->class !== $controller) {
                 break;
             }
 
@@ -288,75 +274,71 @@ class Route
 
 
     /**
+     * @param null $key
+     * @return array|mixed|string
+     */
+    public function getGroupStack($key = null)
+    {
+        return is_null($key) ? $this->groupStack :
+            (isset($this->groupStack[$key]) ? $this->groupStack[$key] : '');
+    }
+
+    /**
+     * @return array
+     */
+    public function getPatterns()
+    {
+        return $this->patterns;
+    }
+
+    /**
+     * @param array $patterns
+     */
+    public function setPatterns($patterns)
+    {
+        $this->patterns = $patterns;
+    }
+
+
+    /**
      * 添加路由
      * @param array $methods
      * @param string $uri
      * @param array|string|Closure $action
-     * @return $this
+     * @return Route
      */
     private function addRoute($methods = [], $uri = '', $action = '')
     {
-        if ($action instanceof Closure || is_string($action)) {
-            $action = ['uses' => $action];
-        }
+        $route = (new Route($this))->add($methods, $uri, $action);
 
-        $action['middleware'] = isset($action['middleware']) ? (array)$action['middleware'] : [];
+        $this->allRoutes[$uri] = $route;
 
-        if (!empty($this->groupStack)) {
-            if (!empty($this->groupStack['prefix'])) {
-                $uri = $this->groupStack['prefix'] . ($uri == '/' || empty($uri) ? '' : '/' . trim($uri, '/'));
+        if (is_array($action)) {
+            if (is_string($action['uses'])) {
+                $this->actionList[$action['uses']] = $route;
             }
 
             if (isset($action['as'])) {
-                $action['as'] = $this->groupStack['as'] . $action['as'];
+                $this->nameList[$action['as']] = $route;
             }
-
-
-            $action['namespace'] = $this->namespacePrefix . $this->groupStack['namespace'];
-            $action['middleware'] = array_merge($this->groupStack['middleware'], $action['middleware']);
-        }
-
-        $arr = [
-            'uri' => $uri,
-            'method' => $methods,
-            'params' => [],
-            'paramsName' => [],
-            'action' => $action,
-            'regex' => $uri
-        ];
-
-        if (preg_match_all('/\/{(.*)}/U', $uri, $matches)) {
-            $patterns = array_merge($this->patterns, $action['pattern']);
-            foreach ($matches[1] as $k => $v) {
-                $pattern = isset($patterns[$v]) ? $patterns[$v] : '[^/]*';
-                if (strpos($v, '=') === false) {
-                    $arr['regex'] = str_replace($matches[0][$k], '/(?P<' . $v . '>' . $pattern . ')', $arr['regex']);
-                    $arr['paramsName'][] = $v;
-                    $arr['params'][$v] = null;
-                } else {
-                    $param = explode('=', $v);
-                    $arr['regex'] = str_replace($matches[0][$k], '(?:/(?P<' . $param[0] . '>' . $pattern . '))', $arr['regex']);
-                    $arr['paramsName'][] = $param[0];
-                    $arr['params'][$param[0]] = $param[1];
-                }
-            }
-        }
-        $arr['regex'] = '#' . $arr['regex'] . '?$#is';
-
-        $this->allRoutes[$uri] = $arr;
-
-        if (is_string($action['uses'])) {
-            $this->actionList[$action['uses']] = $arr;
-        }
-
-        if (isset($action['as'])) {
-            $this->nameList[$action['as']] = $arr;
         }
 
         foreach ($methods as $method) {
-            $this->routes[$method][$uri] = $arr;
+            $this->routes[$method][$uri] = $route;
         }
-        return $this;
+
+        return $route;
+    }
+
+
+    public function nameListPush($name, Route $route)
+    {
+        $this->nameList[$name] = $route;
+    }
+
+    public function nameListRemove($name)
+    {
+        unset($this->nameList[$name]);
     }
 
     /**
@@ -463,74 +445,75 @@ class Route
 
     /**
      * 查找当前路由
-     * @return array
+     * @return Route
      */
     protected function findRoute()
     {
         if (isset($this->routes[$this->currentMethod]) && is_array($this->routes[$this->currentMethod])) {
-            foreach ($this->routes[$this->currentMethod] as $k => $v) {
-                if (preg_match($v['regex'], $this->currentUri, $matches)) {
-                    $this->currentRoute = $v;
+            foreach ($this->routes[$this->currentMethod] as $k => $route) {
 
-                    $this->currentRoute['params'] = array_merge($v['params'], array_intersect_key($matches, $v['params']));
+                if (preg_match($route->getRegex(), $this->currentUri, $matches)) {
+                    $this->currentRoute = $route;
+
+                    $params = $route->getParams();
+                    $this->currentRoute->setParams(array_merge($params, array_intersect_key($matches, $params)));
 
                     return $this->currentRoute;
                 }
             }
-        }
-        if ($this->uriAutoAddressing) {
-            $this->uriMapping();
         }
 
         return $this->currentRoute;
     }
 
     /**
-     * URL自动映射到路由
+     * @param array $routes
      */
-    private function uriMapping()
+    public function setRoutes($routes)
     {
-        $namespace = '';
-
-        $ctlPath = APP_PATH . Config::get('ctrBaseNamespace') . '/';
-        //默认方法
-        $defaultAct = Config::get('defaultAct');
-
-        $uri = array_filter(explode('/', $this->currentUri));
-
-        foreach ($uri as $k => $v) {
-            $v = ucfirst(strtolower($v));
-            if (is_dir($ctlPath . $v)) {
-                $ctlPath .= empty($v) ? '' : $v . '/';
-
-                $namespace .= $v . '\\';
-                unset($uri[$k]);
-            } else {
-                $this->ctlName = ucfirst(strtolower($v));
-                $this->actName = empty($uri[$k + 1]) ? $defaultAct : strtolower($uri[$k + 1]);
-                unset($uri[$k], $uri[$k + 1]);
-                break;
-            }
-        }
-
-        if (empty($this->ctlName)) {
-            //默认控制器文件
-            $this->ctlName = Config::get('defaultCtl');
-            $this->actName = $defaultAct;
-        }
-
-        $this->currentRoute = [
-            'uri' => $this->currentUri,
-            'method' => [$this->currentMethod],
-            'params' => array_values($uri),
-            'paramsName' => [],
-            'action' => [
-                'uses' => $namespace . $this->ctlName . '@' . $this->actName,
-                'middleware' => [],
-            ]
-        ];
-
+        $this->routes = $routes;
     }
+
+    /**
+     * @param array $allRoutes
+     */
+    public function setAllRoutes($allRoutes)
+    {
+        $this->allRoutes = $allRoutes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getActionList()
+    {
+        return $this->actionList;
+    }
+
+    /**
+     * @param array $actionList
+     */
+    public function setActionList($actionList)
+    {
+        $this->actionList = $actionList;
+    }
+
+    /**
+     * @return array
+     */
+    public function getNameList()
+    {
+        return $this->nameList;
+    }
+
+    /**
+     * @param array $nameList
+     */
+    public function setNameList($nameList)
+    {
+        $this->nameList = $nameList;
+    }
+
 
     /**
      * 获取当前URI
@@ -566,7 +549,7 @@ class Route
      * 获取当前 HTTP 请求方法
      * @return string
      */
-    protected function getmethod()
+    public function getmethod()
     {
         $method = $_SERVER['REQUEST_METHOD'];
         if ($method == 'GET') {
@@ -589,24 +572,50 @@ class Route
     }
 
 
+    public function requireRoueFiiles()
+    {
+        foreach (self::$routeFiles as $routeFile) {
+            require $routeFile;
+        }
+        return $this;
+    }
+
     /**
      * 调度当前路由
-     * @throws Exception
      */
     public function dispatch()
     {
+        if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
+            $routeCache = unserialize(file_get_contents(APP_PATH . 'Runtime/cache/routes.php'));
+            $this->setRoutes($routeCache->getRoutes());
+            $this->setAllRoutes($routeCache->getAllRoutes());
+            $this->setNameList($routeCache->getNameList());
+            $this->setActionList($routeCache->getActionList());
+            unset($routeCache);
+        } else {
+            $this->requireRoueFiiles();
+        }
+
         $this->findRoute();
 
         if (empty($this->currentRoute)) {
-            throw  new Exception('Route Not Found');
+            sendHttpStatus(404);
+            require config('errors_template.404');
+            exit;
         }
 
-        $action = $this->currentRoute['action'];
-        if (is_array($this->currentRoute['action'])) {
-            $action = $this->currentRoute['action']['uses'];
+        $action = $this->currentRoute->getAction();
+
+        if (!empty($action['view'])) {
+            Config::set('setTemplateDir', $action['view']);
         }
 
-        $middlewareBefore = array_merge(Config::get('middleware.before', []), $this->currentRoute['action']['middleware']);
+
+        $middlewareBefore = array_merge($this->beforeMiddleware, $action['middleware']);
+
+        if (is_array($action)) {
+            $action = $action['uses'];
+        }
 
         Pipeline::send(App::request())
             ->through($middlewareBefore)
@@ -624,17 +633,12 @@ class Route
     protected function getControllerName($action)
     {
         list($this->ctlName, $this->actName) = explode('@', $action);
-        $controller = $this->namespacePrefix . $this->ctlName;
-        $this->currentRoute['action']['uses'] = $this->namespacePrefix . $action;
-        $this->currentRoute['ctlPath'] = ROOT_PATH . str_replace('\\', '/', $controller) . '.php';
+        $controller = $this->ctlName;
+        $uses = $action;
+        $ctlPath = ROOT_PATH . str_replace('\\', '/', $controller) . '.php';
 
-        Config::set([
-            'ctlPath' => $this->currentRoute['ctlPath'],
-            'ctlName' => $this->ctlName,
-            'actName' => $this->actName,
-            'nowAction' => $this->currentRoute['action']['uses'],
-            'param' => $this->currentRoute['params'],
-        ]);
+        $this->currentRoute->setAction('uses', $uses);
+        $this->currentRoute->setCtlPath($ctlPath);
 
         return $controller;
     }
@@ -647,16 +651,16 @@ class Route
     protected function before($request, $action)
     {
         if ($action instanceof Closure) {
-            $request->view = call_user_func_array($action, $this->currentRoute['params']);
+            $request->view = call_user_func_array($action, $this->currentRoute->getParams());
             Pipeline::send($request)
-                ->through(Config::get('middleware.after'))
+                ->through($this->afterMiddleware)
                 ->then(function ($request) {
                     $this->after($request);
                 });
         } else {
             $controller = $this->getControllerName($action);
             $ctlObj = App::loadClass($controller);
-            $middleware = array_merge(Config::get('middleware.middle', []), $ctlObj->getMiddleware());
+            $middleware = array_merge($this->middleMiddleware, $ctlObj->getMiddleware());
 
             Pipeline::send($request)
                 ->through($middleware)
@@ -676,12 +680,12 @@ class Route
      */
     protected function middle($request, $ctlObj)
     {
-        $params = $this->currentRoute['params'];
+        $params = $this->currentRoute->getParams();
         array_unshift($params, $ctlObj, $this->actName);
         $request->view = call_user_func_array('App::runMethod', $params);
 
         Pipeline::send($request)
-            ->through(Config::get('middleware.after'))
+            ->through($this->afterMiddleware)
             ->then(function ($request) {
                 $this->after($request);
             });
@@ -714,7 +718,7 @@ class Route
         } elseif (isset($this->actionList[$routeName])) {
             $route = $this->actionList[$routeName];
         } elseif ($this->uriAutoAddressing && strpos($routeName, '@') !== false) {
-            $url = str_replace(['\\', '@'], '/', substr($routeName, strlen($this->namespacePrefix)));
+            $url = str_replace(['\\', '@'], '/', $routeName);
             if (!empty($params)) {
                 $url .= '/' . implode('/', $params);
             }
@@ -746,14 +750,16 @@ class Route
     {
         $as = isset($attributes['as']) ? $attributes['as'] : '';
         $prefix = isset($attributes['prefix']) ? '/' . trim($attributes['prefix'], '/') : '';
-        $namespace = isset($attributes['namespace']) ? $attributes['namespace'] : '';
+        $namespace = isset($attributes['namespace']) ? trim($attributes['namespace'], '\\') : '';
         $middleware = isset($attributes['middleware']) ? (array)$attributes['middleware'] : [];
         if (empty($this->groupStack)) {
-            $attributes['as'] = $as;
-            $attributes['prefix'] = $prefix;
-            $attributes['namespace'] = $namespace;
-            $attributes['middleware'] = $middleware;
-            $this->groupStack = $attributes;
+            $this->groupStack = [
+                'as' => $as,
+                'prefix' => $prefix,
+                'namespace' => $namespace,
+                'middleware' => $middleware,
+            ];
+
         } else {
             $this->groupStack['as'] .= $as;
             $this->groupStack['prefix'] .= $prefix;
@@ -761,9 +767,13 @@ class Route
             $this->groupStack['middleware'] = array_merge($this->groupStack['middleware'], $middleware);
         }
 
+        if (isset($attributes['view'])) {
+            $this->groupStack['view'] = $attributes['view'];
+        }
+
         call_user_func($callback, $this);
 
-        array_pop($this->groupStack);
+        $this->groupStack = [];
     }
 
     /**
@@ -786,7 +796,7 @@ class Route
 
     /**
      * 当前路由
-     * @return array
+     * @return Route
      */
     public function getCurrentRoute()
     {
@@ -869,4 +879,8 @@ class Route
         return $this;
     }
 
+    public static function loadRoutesFrom($path)
+    {
+        self::$routeFiles[] = $path;
+    }
 }

@@ -10,6 +10,7 @@
 namespace YrPHP;
 
 use \DB;
+use Route;
 
 class Debug
 {
@@ -160,8 +161,8 @@ class Debug
 
 
         static::$info[] = '内存使用：<strong style="color:red">' . round(memory_get_usage() / 1024, 2) . ' KB</strong>';
-        static::$info[] = '控制器地址：' . C('ctlPath');
-        static::$info[] = '调用方法：' . C('nowAction');
+        static::$info[] = '控制器地址：' . Route::getCurrentRoute()->getCtlPath();
+        static::$info[] = '调用方法：' . Route::getCurrentRoute()->getAction();
         if (count(static::$info) > 0) {
             $mess .= '<br>［系统信息］';
             foreach (static::$info as $info) {
@@ -179,7 +180,7 @@ class Debug
             }
             $mess .= '<li style="word-wrap:break-word;word-break:break-all;overflow: hidden;">[' . $val['time'] . ' 秒]&nbsp;&nbsp;&nbsp;&nbsp;' . $sql;
 
-            $mess .= json_encode($val['param'],JSON_UNESCAPED_UNICODE);
+            $mess .= json_encode($val['param'], JSON_UNESCAPED_UNICODE);
             $mess .= '</li>';
         }
 
@@ -209,7 +210,7 @@ class Debug
     public static function log($content = '', $fileName = null)
     {
         $fileName = is_null($fileName) ? 'log-' . date('Y-m-d') : $fileName;
-        $fileName = C('logDir') . $fileName . '.log';
+        $fileName = config('logDir') . $fileName . '.log';
         file_put_contents($fileName, $content . "\n", FILE_APPEND);
     }
 }

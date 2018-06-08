@@ -27,7 +27,7 @@ class Cache
     public static function getInstance($dbCacheType = null)
     {
         if (!(static::$_instance instanceof self)) {
-            $dbCacheType = is_null($dbCacheType) ? C('dbCacheType') : $dbCacheType;
+            $dbCacheType = is_null($dbCacheType) ? config('dbCacheType') : $dbCacheType;
             $dbCacheType = strtolower($dbCacheType);
 
             switch ($dbCacheType) {

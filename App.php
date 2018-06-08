@@ -33,10 +33,6 @@ class App
         //注册自动加载函数
         spl_autoload_register('static::autoLoadClass');
 
-        if (!file_exists(APP)) {
-            Structure::run();
-        }
-
         static::loadConf();
         static::runBoots();
     }
@@ -166,7 +162,7 @@ class App
 
     public static function runBoots()
     {
-        foreach (C('boots') as $boot) {
+        foreach (config('boots') as $boot) {
             static::runMethod($boot, 'init');
         }
     }
@@ -176,11 +172,6 @@ class App
         static::init();
         header("Content-Type:" . Config::get('contentType') . ";charset=" . Config::get('charset')); //设置系统的输出字符为utf-8
 
-        if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
-            Route::setRoutes(include APP_PATH . 'Runtime/cache/routes.php');
-        } else {
-            require APP_PATH . 'Config/routes.php';
-        }
 
         Route::dispatch();
 
@@ -188,6 +179,7 @@ class App
 
     /**
      * @param array $argv
+     * @throws ReflectionException
      */
     public static function cli($argv)
     {
@@ -199,7 +191,7 @@ class App
 
         $class = Config::get('commands.' . $argv[1]);
         if (is_null($class)) {
-            $class = APP . '\\' . Config::get('ctrBaseNamespace') . '\\' . ucfirst(strtolower(str_replace('/', '\\', $argv[1])));
+            $class = $argv[1];
         }
 
         $method = $argv[2];
@@ -218,6 +210,7 @@ class App
      * @param string $className 需要得到单例对象的类名
      * @param $parameter $args 0个或者更多的参数，做为类实例化的参数。
      * @return  object
+     * @throws ReflectionException
      */
     public static function loadClass()
     {
@@ -257,6 +250,7 @@ class App
      * @param ReflectionMethod $rfMethod
      * @param array $params
      * @return array
+     * @throws ReflectionException
      */
     public static function getDependencies(ReflectionMethod $rfMethod, $params = [])
     {
@@ -285,6 +279,7 @@ class App
     /**
      * 运行类方法 自动填充参数
      * @return mixed
+     * @throws ReflectionException
      */
     public static function runMethod()
     {

@@ -23,7 +23,7 @@ class Memcache implements ICache
             return static::$object;
         } else {
             static::$object = new \Memcache;
-            $config = C('memcache');
+            $config = config('memcache');
             if (is_string($config)) {
                 $conf = explode(':', $config);
                 static::$object->connect($conf[0], $conf[1]);
@@ -72,7 +72,7 @@ class Memcache implements ICache
      */
     public function set($key, $val, $timeout = null)
     {
-        $timeout = is_null($timeout) ? C('dbCacheTime') : $timeout;
+        $timeout = is_null($timeout) ? config('dbCacheTime') : $timeout;
         return static::getInstance()->set($key, mySerialize($val), 0, $timeout);
     }
 

@@ -27,7 +27,7 @@ function &getInstance()
  * @param mixed $default 默认值
  * @return mixed
  */
-function C($name = null, $default = null)
+function config($name = null, $default = null)
 {
     return \YrPHP\Config::get($name, $default);
 }
@@ -198,7 +198,7 @@ function cookie($key = '', $val = '')
 
     if (!empty($val)) {
 
-        setcookie($key, $val, time() + C('cookieExpire'), C('cookiePath'), C('cookieDomain'));
+        setcookie($key, $val, time() + config('cookieExpire'), config('cookiePath'), config('cookieDomain'));
         return true;
     }
 
@@ -224,7 +224,7 @@ function mySerialize($obj = '')
     }
     $data = serialize($obj);
 
-    if (C('cacheCompress')) {
+    if (config('cacheCompress')) {
         $data = gzcompress($data, 6);
     }
     return $data;
@@ -240,7 +240,7 @@ function myUnSerialize($txt = '')
     if (empty($txt)) {
         return false;
     }
-    if (C('cacheCompress')) {
+    if (config('cacheCompress')) {
         $txt = gzuncompress($txt);
     }
 
@@ -264,21 +264,6 @@ function requireCache($filename)
         }
     }
     return $_importFiles[$filename];
-}
-
-/**
- * 404跳转
- * @param string $msg 提示字符串
- * @param string $url 跳转URL
- * @param int $time 指定时间跳转
- */
-function error404($msg = '', $url = '', $time = 3)
-{
-    sendHttpStatus(404);
-    $msg = empty($msg) ? '你访问的页面不存在或被删除！' : $msg;
-    $url = empty($url) ? getUrl() : $url;
-    require BASE_PATH . 'resource/tpl/404.php';
-    die;
 }
 
 /**
@@ -432,11 +417,12 @@ function randStr($len = 8, $type = 'wd')
 /**
  * 发送HTTP状态
  * @param integer $code 状态码
- * @return void
+ * @return YrPHP\Response
  */
+
 function sendHttpStatus($code)
 {
-    \Response::status($code);
+    return \Response::status($code);
 }
 
 /**
