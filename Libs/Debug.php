@@ -162,7 +162,7 @@ class Debug
 
         static::$info[] = '内存使用：<strong style="color:red">' . round(memory_get_usage() / 1024, 2) . ' KB</strong>';
         static::$info[] = '控制器地址：' . Route::getCurrentRoute()->getCtlPath();
-        static::$info[] = '调用方法：' . Route::getCurrentRoute()->getAction();
+        static::$info[] = '调用方法：' . Route::getCurrentRoute()->getAction('uses');
         if (count(static::$info) > 0) {
             $mess .= '<br>［系统信息］';
             foreach (static::$info as $info) {
