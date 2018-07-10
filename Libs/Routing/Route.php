@@ -197,9 +197,9 @@ class Route
     /**
      * @return mixed
      */
-    public function getAction()
+    public function getAction($key = null)
     {
-        return $this->action;
+        return is_null($key) ? $this->action : ($this->action[$key] ?? null);
     }
 
     /**
