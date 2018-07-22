@@ -125,26 +125,11 @@ class Router
 
 
     /**
-     * 在实例化控制器之前全局中间件
+     * 全局中间件
      *
      * @var array
      */
-    protected $beforeMiddleware = [];
-
-
-    /**
-     * 在实例化控制器实例化之后，未调用方法之前全局中间件
-     *
-     * @var array
-     */
-    protected $middleMiddleware = [];
-
-    /**
-     * 调用方法之后全局中间件
-     *
-     * @var array
-     */
-    protected $afterMiddleware = [];
+    protected $middleware = [];
 
 
     /**
@@ -449,6 +434,17 @@ class Router
      */
     protected function findRoute()
     {
+        if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
+            $routeCache = unserialize(file_get_contents(APP_PATH . 'Runtime/cache/routes.php'));
+            $this->setRoutes($routeCache->getRoutes());
+            $this->setAllRoutes($routeCache->getAllRoutes());
+            $this->setNameList($routeCache->getNameList());
+            $this->setActionList($routeCache->getActionList());
+            unset($routeCache);
+        } else {
+            $this->requireRoueFiiles();
+        }
+
         if (isset($this->routes[$this->currentMethod]) && is_array($this->routes[$this->currentMethod])) {
             foreach ($this->routes[$this->currentMethod] as $k => $route) {
 
@@ -585,16 +581,6 @@ class Router
      */
     public function dispatch()
     {
-        if (file_exists(APP_PATH . 'Runtime/cache/routes.php')) {
-            $routeCache = unserialize(file_get_contents(APP_PATH . 'Runtime/cache/routes.php'));
-            $this->setRoutes($routeCache->getRoutes());
-            $this->setAllRoutes($routeCache->getAllRoutes());
-            $this->setNameList($routeCache->getNameList());
-            $this->setActionList($routeCache->getActionList());
-            unset($routeCache);
-        } else {
-            $this->requireRoueFiiles();
-        }
 
         $this->findRoute();
 
@@ -611,19 +597,37 @@ class Router
         }
 
 
-        $middlewareBefore = array_merge($this->beforeMiddleware, $action['middleware']);
-
-        if (is_array($action)) {
-            $action = $action['uses'];
-        }
-
         Pipeline::send(App::request())
-            ->through($middlewareBefore)
+            ->through($this->middleware)
             ->then(function ($request) use ($action) {
+
                 $this->before($request, $action);
             });
 
+
     }
+
+
+    protected function gatherRouteMiddleware($middlewares)
+    {
+        $newMiddlewares = [];
+        foreach ($middlewares as $middleware) {
+            if (isset($this->middlewareGroups[$middleware])) {
+                foreach ($this->middlewareGroups as $groupMiddleware) {
+                    if (isset($this->routeMiddleware[$groupMiddleware])) {
+                        $newMiddlewares[] = $this->routeMiddleware[$groupMiddleware];
+                    } else {
+                        $newMiddlewares[] = $groupMiddleware;
+                    }
+                }
+            } else if (isset($this->routeMiddleware[$middleware])) {
+                $newMiddlewares[] = $this->routeMiddleware[$middleware];
+            }
+        }
+
+        return $newMiddlewares;
+    }
+
 
     /**
      * 获取当前URI对应的控制器类名
@@ -644,38 +648,40 @@ class Router
     }
 
     /**
-     * 在实例化控制器之前调用中间件
      * @param $request
      * @param $action
      */
     protected function before($request, $action)
     {
-        if ($action instanceof Closure) {
-            $request->view = call_user_func_array($action, $this->currentRoute->getParams());
-            Pipeline::send($request)
-                ->through($this->afterMiddleware)
-                ->then(function ($request) {
-                    $this->after($request);
-                });
-        } else {
-            $controller = $this->getControllerName($action);
-            $ctlObj = App::loadClass($controller);
-            $middleware = array_merge($this->middleMiddleware, $ctlObj->getMiddleware());
+        if ($action['uses'] instanceof Closure) {
+            $request->view = call_user_func_array($action['uses'], $this->currentRoute->getParams());
+            $middlewares = $this->gatherRouteMiddleware($action['middleware']);
 
             Pipeline::send($request)
-                ->through($middleware)
+                ->through($middlewares)
+                ->then(function ($request) use ($action) {
+                    $this->after($request);
+                });
+
+
+        } else {
+            $controller = $this->getControllerName($action['uses']);
+            $ctlObj = App::loadClass($controller);
+            $middlewares = $this->gatherRouteMiddleware(
+                array_merge($action['middleware'], $ctlObj->getMiddleware())
+            );
+
+            Pipeline::send($request)
+                ->through($middlewares)
                 ->then(function ($request) use ($ctlObj) {
                     $this->middle($request, $ctlObj);
                 });
-
-
         }
 
     }
 
 
     /**
-     * 在实例化控制器实例化之后，未调用方法之前调用中间件
      * @param $action
      */
     protected function middle($request, $ctlObj)
@@ -684,16 +690,10 @@ class Router
         array_unshift($params, $ctlObj, $this->actName);
         $request->view = call_user_func_array('App::runMethod', $params);
 
-        Pipeline::send($request)
-            ->through($this->afterMiddleware)
-            ->then(function ($request) {
-                $this->after($request);
-            });
-
+        $this->after($request);
     }
 
     /**
-     * 调用方法之后调用中间件
      * @param $request
      */
     protected function after($request)
@@ -830,27 +830,6 @@ class Router
         return $this->actName;
     }
 
-    public function beforeMiddleware($class)
-    {
-        $this->beforeMiddleware[] = $class;
-
-        return $this;
-    }
-
-    public function middleMiddleware($class)
-    {
-        $this->middleMiddleware[] = $class;
-
-        return $this;
-    }
-
-    public function afterMiddleware($class)
-    {
-        $this->afterMiddleware[] = $class;
-
-        return $this;
-    }
-
     /**
      * Register a short-hand name for a middleware.
      *
@@ -882,5 +861,21 @@ class Router
     public static function loadRoutesFrom($path)
     {
         self::$routeFiles[] = $path;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMiddleware()
+    {
+        return $this->middleware;
+    }
+
+    /**
+     * @param array $middleware
+     */
+    public function middleware($middleware)
+    {
+        $this->middleware[] = $middleware;
     }
 }

@@ -53,7 +53,7 @@ abstract class Controller
      */
     public function middleware($middleware, array $options = [])
     {
-        $this->middlewares[APP . '\Middleware\\' . $middleware] = $options;
+        $this->middlewares[$middleware] = $options;
     }
 
     public function getMiddleware()

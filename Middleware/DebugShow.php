@@ -19,11 +19,11 @@ class DebugShow implements IMiddleware
 
     public function handler(Request $request, Closure $next)
     {
+        $next($request);
         if (DEBUG && !$request->isAjax()) {
             echo Debug::message();
         }
 
-        $next($request);
     }
 
 }

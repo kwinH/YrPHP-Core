@@ -10,7 +10,7 @@ yrPHP运用大量的单例及工厂模式，确保用最少的资源做最多的
 #### 通过 Composer Create-Project
 
 ```
-composer create-project kwin/yrphp yrphp
+composer create-project kwin/yrphp blog
 ```
 
 #### Git安装
@@ -48,8 +48,6 @@ php -S localhost:8000 -t blog
 http://localhost:8000
 ```
 
-会自动生成以下目录结构
-
 至此，YrPHP已经安装成功。
 
 #目录结构
@@ -59,14 +57,26 @@ www  WEB部署目录（或者子目录）
 ```
 ├─index.php       入口文件
 ├─README.md       README文件
-├─App     应用目录
-├─public          资源文件目录
-└─YrPHP           框架目录
-│  ├─Common      核心公共函数目录
-│  ├─Config      核心配置目录
-│  ├─Lang        核心语言包目录
-│  ├─Libs        框架类库目录
-│  ├─resource    核心资源文件目录
+├─App       应用目录
+│  ├─Boots       引导启动类
+│  ├─Config      自定义配置目录
+│  ├─Controls    默认控制器目录
+│  ├─Helpers     常用方法存放目录
+│  ├─Lang        自定义语言包目录
+│  ├─Libs        自定义类库目录
+│  ├─Listeners   事件类库目录
+│  ├─Middleware  中间件类库目录
+│  ├─Models      默认模型目录
+│  ├─Routes      所有路由定义文件
+│  ├─Runtime     缓存目录
+│  ├─Views       默认视图目录
+├─public     资源文件目录
+└─YrPHP      框架目录
+│  ├─Console      核心命令类目录
+│  ├─Helpers      常用方法存放目录
+│  ├─Libs         框架类库目录
+│  ├─Middleware   中间件类库目录
+│  ├─resource     核心资源文件目录
 
 ```
 
@@ -79,31 +89,10 @@ index.php
     //定义项目目录
     define("APP", 'App');
     //框架入口文件
-    include 'App.php';
-```
+	include 'YrPHP/App.php';
+	//执行核心代码
+	App::run();
 
-> 注意：APP的定义必须是当前目录下的文件名,不需要标明路径
-> 系统会在第一次调用时 自动生成项目目录结构
-
-#应用目录
-
-www  WEB部署目录（或者子目录）
-
-```
-├─index.php       入口文件
-
-├─App     应用目录
-│  ├─Controls    默认控制器目录
-│  ├─Models      默认模型目录
-│  ├─views      默认视图目录
-│  ├─Common      自定义公共函数目录
-│  ├─Config      自定义配置目录
-│  ├─Lang        自定义语言包目录
-│  ├─Libs        自定义类库目录
-│  ├─Runtime    缓存目录
-.
-.
-.
 ```
 
 
@@ -129,6 +118,34 @@ www  WEB部署目录（或者子目录）
 你可以在此做一些配置及预处理。
 
 ## 路由
+
+在引导启动项中载入路由配置文件
+
+```php
+<?php
+/**
+ * Project: YrPHP.
+ * Author: Kwin
+ * QQ:284843370
+ * Email:kwinwong@hotmail.com
+ */
+
+namespace App\Boots;
+
+
+use YrPHP\Routing\Router;
+
+class AddRoutesBoot
+{
+
+    function init()
+    {
+        Router::loadRoutesFrom(APP_PATH . 'Routes/web.php');
+    }
+}
+```
+
+
 
 ### 基本路由
 
@@ -266,7 +283,7 @@ Route::get('user/profile', [
 ```PHP
 Route::get('user/profile', [
     'as' => 'profile',
-    'uses' => 'UserController@showProfile'
+    'uses' => 'App\\Controllers\\UserController@showProfile'
 ]);
 ```
 
@@ -338,18 +355,18 @@ Route::group(['middleware' => 'auth'], function () {
 另一个常见的例子是，指定相同的 PHP 命名空间给控制器群组。可以使用 `namespace` 参数来指定群组内所有控制器的命名空间：
 
 ```PHP
-Route::group(['namespace' => 'Admin'], function()
+Route::group(['namespace' => 'App\\Controllers'], function()
 {
-    // 控制器在「App\Controllers\Admin」命名空间
+    // 控制器在「App\Controllers」命名空间
 
-    Route::group(['namespace' => 'User'], function()
+    Route::group(['namespace' => 'Admin'], function()
     {
-        // 控制器在「App\Controllers\Admin\User」命名空间
+        // 控制器在「App\Controllers\Admin」命名空间
     });
 });
 ```
 
-请记住，默认你不用指定完整的`App\Controllers` 命名空间前缀就能注册控制器路由。所以，我们只需要指定在基底 `App\Controllers`根命名空间之后的部分命名空间。
+
 
 ### 路由前缀
 
@@ -665,31 +682,118 @@ class Auth implements IMiddleware
 }
 ```
 
+### 前置 & 后置中间件
+
+中间件是在请求之前或之后运行取决于中间件本身。例如，以下的中间件会在应用处理请求 **之前** 执行一些任务：
+
+```PHP
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class BeforeMiddleware
+{
+    public function handler($request, Closure $next)
+    {
+        // 执行动作
+
+        return $next($request);
+    }
+}
+```
+
+而下面（这种写法的）中间件会在应用处理请求 **之后** 执行其任务：
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class AfterMiddleware
+{
+    public function handler ($request, Closure $next)
+    {
+        $response = $next($request);
+
+        // 执行动作
+
+        return $response;
+    }
+}
+```
+
+
+
 ## 调用
 
-1、你可以在App/Config/config.php文件中配置
+1、你可以在App/Boots/AddMiddleware.php文件中配置
 
 ```php
 <?php 
-//.....
-    /*--------------------以下是全局中间件配置---------------------------------------*/
-    'middleware' => [
-        //在实例化控制器之前
-        'before' => [
-            YrPHP\Middleware\VerifyCsrfToken::class,
-        ],
-        //在实例化控制器实例化之后，未调用方法之前
-        'middle' => [
+/**
+ * Project: swoole.
+ * Author: Kwin
+ * QQ:284843370
+ * Email:kwinwong@hotmail.com
+ */
 
-        ],
-        //调用方法之后
-        'after' => [
+namespace App\Boots;
 
-        ],
-    ],
+use YrPHP\Boots\AddMiddleware as BootsAddMiddleware;
 
-//....
+class AddMiddleware extends BootsAddMiddleware
+{
+    /**
+     * 全局中间件
+     *
+     * @var array
+     */
+    protected $middleware = [
+        \YrPHP\Middleware\DebugListen::class,
+        \YrPHP\Middleware\VerifyCsrfToken::class,
+    ];
+
+    /**
+     * 所有的中间件别名
+     *
+     * @var array
+     */
+    protected $routeMiddleware = [
+        'auth'=>\App\Middleware\Auth::class
+    ];
+
+    /**
+     * 所有的中间件组
+     * @var array
+     */
+    protected $middlewareGroups = [
+        'admin'=>[
+            'auth'
+        ]
+    ];
+
+}
 ```
+
+> 可以使用与单个中间件相同的语法将中间件组分配给路由和控制器操作。重申一遍，中间件组只是更方便地实现了一次为路由分配多个中间件。 
+
+```php
+Route::get('/', function () {
+    //
+})->middleware('admin');
+
+Route::group(['middleware' => ['admin']], function () {
+    //
+});
+```
+
+
+
+
 
 2、也可以在控制器中单独调用
 
@@ -710,7 +814,7 @@ class User extends Controller
     function __construct()
     {
         parent::__construct();
-        $this->middleware('Auth',['except'=>['login']]);
+        $this->middleware('auth',['except'=>['login']]);
     }
   
   	//....
@@ -718,60 +822,41 @@ class User extends Controller
     }
 ```
 
-> middleware(\$middleware, array \$options = []) \$middleware参数为中间件名，\$options 为过滤条件，['except'=>['login']]代表调用login方法不调用该中间件，其他都要调用该中间件，['only'=>['content']]代表仅调用content方法时调用该中间件，其他都不要调用该中间件。
+> middleware(\$middleware, array \$options = []) \$middleware参数为中间件别名，\$options 为过滤条件，['except'=>['login']]代表调用login方法不调用该中间件，其他都要调用该中间件，['only'=>['content']]代表仅调用content方法时调用该中间件，其他都不要调用该中间件。
 
 #控制器
 
 例子：创造一个控制器
-在APP目录下的controls目录下创建一个名为:
-Test.class.php的文件
+在APP目录下的Controller目录下创建一个名为:
+UserController.php的文件
 
 ```php
 <?php
 use YrPHP\Controller;
 
-class Test extends Controller
+class UserController extends Controller
 {
     function __construct()
     {
         parent::__construct();
     }
 
-    function  index()
+    function  show($id)
     {
-      echo "Hello World";
+      echo "Hello World ".$id;
     }
 ```
 
+你可以这样定义一个指向该控制器行为的路由：
 
-接着我们用浏览器打开 example.com/index.php/test
-就可以看到 Hello World
-
-##命名空间
-```php
-use YrPHP\Controller;
+```PHP
+Route::get('user/{id}', 'UserController@show');
 ```
 
-表示引入 YrPHP\Controller 命名空间便于直接使用。所以，
+现在，当一个请求与此指定路由的 URI 匹配时， `UserController` 类的 `show` 方法就会被执行。当然，路由参数也会被传递至该方法。
 
-```php
-use YrPHP\Controller;
-
-class Test extends Controller
-```
-
-等同于使用：
-
-```php
-class Test extends YrPHP\Controller
-```
-
-
-
-##规则
-1. 文件名必须是：***类名***.class.php
-2. ***类名首字母必须大写***
-3. 必须继承Controller类，可以重写Controller类（这在扩展中再说）
+接着我们用浏览器打开 example.com/index.php/user/1
+就可以看到 Hello World 1
 
 # 依赖注入
 ```php
@@ -2471,7 +2556,7 @@ class TestRequest extends FormRequest
  */
 namespace App\Controllers;
 
-use App;
+use App;s
 use App\TestRequest;
 use YrPHP\Controller;
 
@@ -2486,7 +2571,7 @@ class Index extends Controller
 
     function index(TestRequest $request, $id)
     {
-		//如果TestRequest验证没通过，则会将错误信息写入session 如果是post提交则返回上一页,如果是ajax，则返回{error:{}}, 获取错误信息：session('errors')
+		//如果TestRequest验证没通过，则会将错误信息写入session 如果是post提交则返回上一页,如果是ajax，则返回{error:{}}, 获取错误信息：session('errors') 
     }
 ```
 
@@ -3676,5 +3761,5 @@ $cart->remove($rowId);
 
 ##Email 类   PHPMailer
 ````
-
+  
 ````
