@@ -34,6 +34,12 @@ class DB
     public static $PdoFarm = [];
 
     /**
+     * 表字段
+     * @var array
+     */
+    private static $tableFields = [];
+
+    /**
      * 确保事务是操作同一个PDO
      * @var PDO
      */
