@@ -10,7 +10,7 @@ yrPHP运用大量的单例及工厂模式，确保用最少的资源做最多的
 #### 通过 Composer Create-Project
 
 ```
-composer create-project kwin/yrphp blog
+composer create-project kwin/yrphp yrphp "5.*"
 ```
 
 #### Git安装
