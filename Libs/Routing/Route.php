@@ -74,7 +74,7 @@ class Route
         if (preg_match_all('/\/{(.*)}/U', $regex, $matches)) {
             $patterns = array_merge($this->router->getPatterns(), $this->action['pattern']);
             foreach ($matches[1] as $k => $v) {
-                $pattern = isset($patterns[$v]) ? $patterns[$v] : '[^/]*';
+                $pattern = isset($patterns[$v]) ? $patterns[$v] : '[^/]++';
                 if (strpos($v, '=') === false) {
                     $regex = str_replace($matches[0][$k], '/(?P<' . $v . '>' . $pattern . ')', $regex);
                     $this->paramsName[] = $v;
@@ -88,7 +88,7 @@ class Route
             }
         }
 
-        $this->regex = '#' . $regex . '?$#is';
+        $this->regex = '#^' . $regex . '$#isDu';
 
         return $this;
     }
