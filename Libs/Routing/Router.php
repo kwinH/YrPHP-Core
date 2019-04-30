@@ -211,15 +211,15 @@ class Router
         $uri = '/' . $uri;
         $namespace = $this->groupStack['namespace'] ?? '';
 
-        $controller = ($namespace ? rtrim($namespace, '\\') : '') . '\\' . $controller;
+        $controllerClass = ($namespace ? rtrim($namespace, '\\') : '') . '\\' . $controller;
 
-        $reflection = new ReflectionClass($controller);
+        $reflection = new ReflectionClass($controllerClass);
 
         $methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
 
         foreach ($methods as $v) {
 
-            if ($v->class !== $controller) {
+            if ($v->class !== $controllerClass) {
                 break;
             }
 
@@ -636,12 +636,12 @@ class Router
      */
     protected function getControllerName($action)
     {
-        list($this->ctlName, $this->actName) = explode('@', $action);
-        $controller = $this->ctlName;
-        $uses = $action;
+        list($this->ctlName, $this->actName) = explode('@', $action['uses']);
+        $controller = (empty($action['namespace']) ? '' : ($action['namespace'] . '\\')) . $this->ctlName;
+
         $ctlPath = ROOT_PATH . str_replace('\\', '/', $controller) . '.php';
 
-        $this->currentRoute->setAction('uses', $uses);
+        $this->currentRoute->setAction('uses', $action['uses']);
         $this->currentRoute->setCtlPath($ctlPath);
 
         return $controller;
@@ -665,7 +665,7 @@ class Router
 
 
         } else {
-            $controller = $this->getControllerName($action['uses']);
+            $controller = $this->getControllerName($action);
             $ctlObj = App::loadClass($controller);
             $middlewares = $this->gatherRouteMiddleware(
                 array_merge($action['middleware'], $ctlObj->getMiddleware())
@@ -763,7 +763,7 @@ class Router
         } else {
             $this->groupStack['as'] .= $as;
             $this->groupStack['prefix'] .= $prefix;
-            $this->groupStack['namespace'] .= '\\' . $namespace;
+            $this->groupStack['namespace'] .= empty($namespace) ? '' : ('\\' . $namespace);
             $this->groupStack['middleware'] = array_merge($this->groupStack['middleware'], $middleware);
         }
 
