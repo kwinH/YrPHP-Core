@@ -137,9 +137,19 @@ class ErrorsMessage
         return json_encode($this->getMessages(), $options);
     }
 
+    public function toString()
+    {
+        return implode(',', $this->messages);
+    }
+
     protected function toSession()
     {
         session('errors', $this);
+    }
+
+    public function __toString()
+    {
+        return $this->toString();
     }
 
     public function __destruct()
