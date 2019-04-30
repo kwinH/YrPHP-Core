@@ -792,7 +792,7 @@ class DB
 
     /**
      * @param string $field
-     * @return Model
+     * @return Model|null
      * @throws Exception
      */
     public final function first($field = '*')
@@ -800,10 +800,12 @@ class DB
         $this->statement = $this->select($field)->limit(1)->toSql();
 
         $data = $this->query($this->statement, $this->parameters);
-        $data = isset($data[0]) ? $data[0] : [];
-        $model = $this->newModel($data);
+        if (isset($data[0])) {
+            $model = $this->newModel($data[0]);
+            return $model;
+        }
 
-        return $model;
+        return null;
     }
 
 
