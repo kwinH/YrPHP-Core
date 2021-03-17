@@ -12,9 +12,9 @@ namespace YrPHP\Routing;
 use App;
 use Closure;
 use Exception;
+use Pipeline;
 use ReflectionClass;
 use ReflectionMethod;
-use Pipeline;
 use YrPHP\Config;
 use YrPHP\Session;
 
@@ -158,8 +158,8 @@ class Router
     /**
      * 获取适用的资源方法
      *
-     * @param  array $defaults
-     * @param  array $options
+     * @param array $defaults
+     * @param array $options
      * @return array
      */
     protected function getResourceMethods(array $defaults, array $options)
@@ -176,9 +176,9 @@ class Router
     /**
      * 将资源路由到控制器
      *
-     * @param  string $name
-     * @param  string $controller
-     * @param  array $options
+     * @param string $name
+     * @param string $controller
+     * @param array $options
      * @return void
      */
     public function resource($name = '', $controller = '', array $options = [])
@@ -308,8 +308,13 @@ class Router
             }
         }
 
+        $uri = $route->getUri();
+        $urlSegment = explode('/', $uri);
+        $urlSegmentCount = count($urlSegment);
+        $urlSegmentFirstStrLen = strlen($urlSegment[1] ?? []);
+
         foreach ($methods as $method) {
-            $this->routes[$method][$uri] = $route;
+            $this->routes[$method][$urlSegmentCount][$urlSegmentFirstStrLen][$uri] = $route;
         }
 
         return $route;
@@ -406,7 +411,7 @@ class Router
     /**
      * 在所有路由上添加一组正则匹配
      *
-     * @param  array $patterns
+     * @param array $patterns
      * @return void
      */
     public function patterns($patterns)
@@ -419,8 +424,8 @@ class Router
     /**
      * 在所有路由上添加一个正则匹配
      *
-     * @param  string $key
-     * @param  string $pattern
+     * @param string $key
+     * @param string $pattern
      * @return void
      */
     public function pattern($key, $pattern)
@@ -446,7 +451,14 @@ class Router
         }
 
         if (isset($this->routes[$this->currentMethod]) && is_array($this->routes[$this->currentMethod])) {
-            foreach ($this->routes[$this->currentMethod] as $k => $route) {
+            $uri = $this->currentUri;
+            $urlSegment = explode('/', $uri);
+            $urlSegmentCount = count($urlSegment);
+            $urlSegmentFirstStrLen = strlen($urlSegment[1] ?? []);
+
+            $currentMethodRange = $this->routes[$this->currentMethod][$urlSegmentCount][$urlSegmentFirstStrLen];
+
+            foreach ($currentMethodRange as $k => $route) {
 
                 if (preg_match($route->getRegex(), $this->currentUri, $matches)) {
                     $this->currentRoute = $route;
@@ -833,8 +845,8 @@ class Router
     /**
      * Register a short-hand name for a middleware.
      *
-     * @param  string $name
-     * @param  string $class
+     * @param string $name
+     * @param string $class
      * @return $this
      */
     public function aliasMiddleware($name, $class)
@@ -847,8 +859,8 @@ class Router
     /**
      * Register a group of middleware.
      *
-     * @param  string $name
-     * @param  array $middleware
+     * @param string $name
+     * @param array $middleware
      * @return $this
      */
     public function middlewareGroup($name, array $middleware)

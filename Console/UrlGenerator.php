@@ -23,7 +23,7 @@ class UrlGenerator
     }
 
     /**
-     * php index.php route cache
+     * php artisan route cache
      */
     public function cache()
     {
@@ -37,7 +37,7 @@ class UrlGenerator
     }
 
     /**
-     * php index.php route clear
+     * php artisan route clear
      */
     public function clear()
     {

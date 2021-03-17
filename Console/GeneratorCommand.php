@@ -14,9 +14,8 @@ use YrPHP\Config;
 
 class GeneratorCommand
 {
-
     /**
-     * php index.php ide-help generate
+     * php artisan ide-help generate
      */
     function generate()
     {
@@ -50,7 +49,7 @@ class GeneratorCommand
     }
 
     /**
-     * php index.php ide-help classAlias
+     * php artisan ide-help classAlias
      */
     function classAlias()
     {
